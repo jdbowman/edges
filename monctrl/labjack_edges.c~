@@ -1,0 +1,92 @@
+#include "labjack_edges.h"
+
+//-----------------------------------------------
+// LabJack 
+//-----------------------------------------------
+
+//-----------------------------------------------
+// labjack_open
+// Open connection to labjack device
+//-----------------------------------------------
+void labjack_open()
+{
+    // Open first LABJACK U3 found over USB
+	LABJACK_hDevice = NULL;
+    LABJACK_localID = -1;
+    LABJACK_hDevice = openUSBConnection(LABJACK_localID);
+	
+    // Get calibration information from U3 and store
+	// it in the caliInfo parameter so we can use it
+	// when reading out values.
+    getCalibrationInfo(LABJACK_hDevice, &LABJACK_caliInfo);
+}
+
+
+
+//-----------------------------------------------
+// labjack_close
+// Close connection to labjack device
+//-----------------------------------------------
+void labjack_close()
+{
+    // ???
+}
+
+
+
+//-----------------------------------------------
+// labjack_readWeather
+// Read the temperature and humidity from the 
+// EDGES weather station
+// -- The humidity sensor is connected to FI06
+// -- The temperature sensor is connected to FI07
+//-----------------------------------------------
+void labjack_readWeather(double* outRackTemperature, double* outTemperature, double* outHumidity)
+{
+    long DAC1Enable;
+	double value;
+	DAC1Enable = 0;
+	*outRackTemperature = 0;
+	*outTemperature = 0;
+	*outHumidity = 0;
+		
+	// Read the labjack's built-in temperature sensor
+	// channel 32 (special range 3.6V)
+    eAIN(LABJACK_hDevice, &LABJACK_caliInfo, 1, &DAC1Enable, 30, 31, &value, 0, 0, 0, 0, 0, 0); 
+    *outRackTemperature = value;
+	
+	// Read the weather station temperature sensor
+	// FIO7  
+    eAIN(LABJACK_hDevice, &LABJACK_caliInfo, 1, &DAC1Enable, 0, 37, &value, 0, 0, 0, 0, 0, 0); 
+	*outTemperature = value*100.0; 
+	
+	// Read the weather station humidity sensor
+	// FI06
+    eAIN(LABJACK_hDevice, &LABJACK_caliInfo, 1, &DAC1Enable, 0, 38, &value, 0, 0, 0, 0, 0, 0); 
+    *outHumidity = value;
+}
+
+//-----------------------------------------------
+// coretemp_read
+//-----------------------------------------------
+int coretemp_read(double *core1, double* core2, double* core3, double* core4)
+{
+	char buffer[1024];
+	char* line;
+	FILE *file = popen("sensors", "r");
+
+	if (file)
+	{
+		while (line = fgets(buffer, sizeof(buffer), file))
+		{
+			printf("%s\n", line);
+		}
+		pclose(file);
+		
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
