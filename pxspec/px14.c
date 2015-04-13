@@ -60,6 +60,7 @@ int pxrun(int mode)
   dAcqRate = 400.0; 
   // -- Connect to and initialize the PX14400 device
   printf ("Connecting to and initializing PX14400 device...\n");
+	printf ("serial/board number: %d\n\n", MY_PX14400_BRD_NUM);
   res = ConnectToDevicePX14(&hBrd, MY_PX14400_BRD_NUM);
   if (res != SIG_SUCCESS)
     {

@@ -425,7 +425,7 @@ void write_spec(double data[], int num, int swpos)
 	{
       toyrday (d1.secs, &yr, &da, &hr, &mn, &sc);
       d1.rday = da;
-      sprintf (d1.filname, "/media/DATA/EDGES_data/%4d_%03d_%02d.acq", yr, da, hr);
+      sprintf (d1.filname, "/home/loco/edges/data/low/%4d_%03d_%02d.acq", yr, da, hr);
    }
 
 	if ((file1 = fopen (d1.filname, "a")) == NULL)
