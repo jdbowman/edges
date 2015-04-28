@@ -159,9 +159,17 @@ class edges:
               'read_alarm_status'   : (0x05, 1, ''),
               'set_temp'            : (0x10, 100, 'degC'),
               'set_bandwidth'       : (0x11, 10, 'degC'),
+              'set_gain'            : (0x12, 10, '---TBD units---'),
+              'set_derivative'      : (0x13, 10, '---TBD units---'),
+              'set_input1_offset'   : (0x14, 100, 'degC'),
+              'set_input2_offset'   : (0x15, 100, 'degC'),
               'set_voltage'         : (0x16, 1000, 'degC'),
+              'set_maxtemp'         : (0x1a, 100, 'degC'),
+              'set_mintemp'         : (0x1b, 100, 'degC'),
+              'set_heat_multiplier' : (0x1c, 1, ''),
               'set_output_enabled'  : (0x1d, 1, ''),
-              'read_temp_set'       : (0x40, 100, 'degC'),
+              'set_cool_multiplier' : (0x1c, 1, ''),
+              'read_temp'           : (0x40, 100, 'degC'),
               'read_bandwidth'      : (0x41, 10, 'degC'),
               'read_gain'           : (0x42, 10, '--TBD units--'),
               'read_derivative'     : (0x43, 10, '--TBD units--'),
@@ -171,8 +179,8 @@ class edges:
               'read_alarm_settings' : (0x47, 1, ''),
               'read_cool_or_heat'   : (0x48, 1, ''),
               'read_alarm_enable'   : (0x49, 1, ''),
-              'read_maxtemp_set'    : (0x4a, 100, 'degC'),
-              'read_mintemp_set'    : (0x4b, 100, 'degC'),
+              'read_maxtemp'        : (0x4a, 100, 'degC'),
+              'read_mintemp'        : (0x4b, 100, 'degC'),
               'read_heat_multiplier': (0x4c, 1, ''),
               'read_output_enabled' : (0x4d, 1, ''),
               'read_cool_multiplier': (0x4e, 1, '')  }
@@ -279,7 +287,6 @@ class edges:
   
 
 
-
   def getPowerStatus(self):
     """
     Name: edges.getPowerStatus()
@@ -287,11 +294,29 @@ class edges:
     Args: N/A
 
     Desc: Returns the on/off status of the power outlets on the Synaccess
-          Netbooter networked power switch.
+          Netbooter networked power switch.  The return value is a dictionary.  
+          Each outlet is a key-value pair in the dictionary, keyed by the
+          outlet number (1 through N).  A value of 1 = ON, 0 = OFF.  The dict
+          also contains the total amperage currently used by the switch under
+          the key 'amps'.  The routine returns None if the query failed.
     """
-    data = self.sendPowerCommand('$A5').split()
-  
-    return data
+    data = self.sendPowerCommand('$A5').split(',')
+
+    # Check if query succeeded
+    if data[0] == '$A0':
+
+      # If so, parse and pack the outlet status and amps
+      values = [int(val) for val in data[1]]
+      values.append(float(data[2]))
+
+      keys = range(0, len(values))
+      keys[0] = 'amps'
+
+      return dict(zip(keys, values[::-1]))
+
+    else:
+
+      return None
 
 
 
