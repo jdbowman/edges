@@ -68,12 +68,18 @@ def checkConduit(argv):
     instrument = d.settings.get('Installation', 'instrument')
     name = d.settings.get('Environment', 'output_name')
 
+    print('\nReading environmental sensor data...\n')
+
     # Print the labels and values to stdout
     for l, v, u in zip(labels, values, units):
       print("{}: {:.2f} {}".format(l.rjust(25), v, u))
 
+    print('')
+
     # Save the data if desired
     if bSave:
+
+      print('Saving record...')
 
       # Concatenate label text and units
       fullLabels = ["{} [{}]".format(l, u) for l, u in zip(labels, units)]
@@ -82,6 +88,12 @@ def checkConduit(argv):
       result = d.writeRecord( '{}/{}'.format(site, name), name, 
                               datetime.utcnow(), values, 
                               fullLabels, breaklevel=2)
+
+      if result:
+        print('Success.\n')
+      else:
+        print('Failed.\n')
+
 
     return result
     

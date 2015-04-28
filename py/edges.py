@@ -215,8 +215,6 @@ class edges:
           handled within this routine.  This routine takes about 1 second to
           execute because it must wait for the thermal controller response.
     """
-    print cmdKey
-    print arg
     
     # Lookup the command provided
     try:
@@ -235,7 +233,7 @@ class edges:
         return None  
 
     # Prepare the command string
-    cmdString = '*{:0>4x}{:0>8x}'.format(cmdNumber, int(arg * argMultiplier))
+    cmdString = '*{:0>4x}{:0>8x}'.format(cmdNumber, int( (arg * argMultiplier) ))
     cmdChecksum = sum(bytearray(cmdString[1:])) % 256
     cmdString = '{}{:0>2x}\r'.format(cmdString, cmdChecksum)
 
@@ -269,12 +267,16 @@ class edges:
           power - turn the outlet on (1) or off (0)
 
     Desc: Turns an outlet on/off on the Synaccess Netbooter networked 
-          power switch.
+          power switch.  Returns True if successful, False otherwise.
     """
 
-    data = self.sendPowerCommand('$A3', id, power)
+    data = self.sendPowerCommand('$A3', id, power).strip('\r\n')
+
+    if data == '$A0':
+      return True
+    else:
+      return False
   
-    return data
 
 
 
@@ -448,9 +450,14 @@ class edges:
     try: 
       with open(filename,'a') as file:
 
-        # If we just created the file, write the header string
-        if not bExists and labels is not None:
-          file.write('# ' + ', '.join(labels).strip('\r\n') + '\n')
+        # If we just created the file, write the header string and labels
+        if not bExists:
+          file.write('# Site: {}, Instrument: {}\n'.format(
+            self.settings.get('Installation', 'site'),
+            self.settings.get('Installation', 'instrument') ))
+
+          if labels is not None:
+            file.write('# ' + ', '.join(labels).strip('\r\n') + '\n')
           
         # Write the data string (and make sure the line ends with a single
         # newline character)
@@ -511,7 +518,7 @@ class edges:
     # Convert temperature voltage to resistance
     resistanceTemp1 = (voltageTemp1 * r1) / (5.0 - voltageTemp1);
     resistanceTemp2 = (voltageTemp2 * r1) / (5.0 - voltageTemp2);
-
+   
     # Convert temperature resistance to temperature (in Kelvin) using 
     # Steinhart-Hart equation 
     temp1 = 1.0 / (t1 + t2*math.log(resistanceTemp1) + t3*math.log(resistanceTemp1)**3.0);
