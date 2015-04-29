@@ -7,11 +7,13 @@ Desc: Defines the EDGES class.  All of the primary EDGES functions are
 import cameraSX
 import ConfigParser
 import errno
+import ftplib
 import math
 import numpy as np
 import os
 import serial
 import shutil
+import socket
 import struct
 import time
 import u3
@@ -39,22 +41,27 @@ class edges:
     """
     Name: edges.__init__()
 
-    Args: N/A
+    Args: (optional) configFile - the path the .ini settings file for EDGES.
+                                  (default is ~/edges.ini)
 
-    Desc: Instantiates a new edges object. 
+    Desc: Instantiates a new edges object and loads the settings. 
     """
-    
-    # Get $EDGES_HOME environment variable defining the location of the EDGES
-    # installation directory.  Will return 'None' if the key is not present.
-    self.homedir = os.environ.get('EDGES_HOME')
-    self.datadir = self.homedir + '/data'
-
-    if (self.homedir == 'None'):
-      warnings.warn('EDGES: No $EDGES_HOME environment variable defined.' \
-            'Proceeding without it.  Some operations may fail or cause unexpected results.')
-
     self.settings = ConfigParser.ConfigParser()
     self.settings.read(os.path.expanduser(configFile))
+
+    # Get $EDGES_HOME environment variable defining the location of the EDGES
+    # installation directory.  Will return 'None' if the key is not present.
+    self.datadir = self.settings.get('Installation', 'datadir')
+
+    #if (self.homedir == 'None'):
+    #  warnings.warn('EDGES: No homedir setting provided.' \
+    #        'Proceeding without it.  Some operations may fail or cause ' \
+    #        'unexpected results.')
+
+    if (self.datadir == 'None'):
+      warnings.warn('EDGES: No datadir setting provided.' \
+            'Proceeding without it.  Some operations may fail or cause ' \
+            'unexpected results.')
 
 
 
@@ -80,19 +87,6 @@ class edges:
 
 
         
-
-  def getHomeDir(self):
-    """
-    Name: edges.getHomeDir()
-
-    Args: N/A
-
-    Desc: Returns the home directory of the EDGES installation
-    """
-    return self.homedir
-
-
-
   def getDataDir(self):
     """
     Name: edges.getDataDir()
@@ -102,6 +96,139 @@ class edges:
     Desc: Returns the data directory of the EDGES installation
     """
     return self.datadir
+
+
+
+  def startVNASession(self):
+    """
+    Name: edges.startVNASession()
+
+    Args: N/A
+
+    Desc: Connects to the VNA and configures the Labjack.  Returns a dictionary
+          containing the socket and device as keys.
+    """
+    # Open a socket to the VNA
+    vnaAddress = self.settings.get('VNA', 'ip_address')
+    vnaPort = int(self.settings.get('VNA', 'port'))
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((vnaAddress, vnaPort))
+
+    # Get VNA model/serial number
+    s.send('*IDN?\n')
+    data = s.recv(100)
+
+    print('Connected to VNA: {}'.format(data))
+
+    # Send configuration settings
+    s.send('SENS:FREQ:START 50e6;*OPC?\n')
+    s.send('SENS:FREQ:STOP 200e6;*OPC?\n')
+    s.send('SENS:SWE:POIN 151;*OPC?\n')
+    s.send('BWID 300;*OPC?\n')
+    s.send('AVER:COUN 1;*OPC?\n')
+    s.send('INIT:CONT 0;*OPC?\n')
+    s.send('SOUR:POW:ALC HIGH;*OPC?\n')
+
+    # Set internal memory as place to store data
+    s.send('MMEM:CDIR "[INTERNAL]:";*OPC?\n')
+
+    # Pause
+    time.sleep(10)
+
+    # Opening the Labjack
+    d = u3.U3()
+
+    # Channels 4-7 digital. 0-3 analog.
+    d.configU3(FIOAnalog = 15)      
+    d.configIO(FIOAnalog = 15)
+
+    # Inverse logic, all outputs OFF
+    d.setDOState(4, state = 1)      
+    d.setDOState(5, state = 1)
+    d.setDOState(6, state = 1)
+    d.setDOState(7, state = 1)
+
+    print('VNA session ready.')
+
+    session = {'socket': s, 'device': d}
+
+    return session
+
+
+
+  def stopVNASession(self, session):
+    """
+    Name: edges.stopVNASession()
+
+    Args: N/A
+
+    Desc: Close the socket and reset the Labjack device
+    """  	
+    # Turn off switch
+    session['device'].setDOState(4, state = 1)      
+    session['device'].setDOState(5, state = 1)
+    session['device'].setDOState(6, state = 1)
+    session['device'].setDOState(7, state = 1)
+    time.sleep(2)                
+
+    # Close socket
+    session['socket'].close()
+
+
+
+  def getVNATrace(self, path, input, session):
+    """
+    Name: edges.getVNATrace()
+
+    Args: path - full path to output trace file
+          input - 1 = OPEN
+                  2 = SHORT
+                  3 = MATCH
+                  4 = LOAD/DUT
+          session - the session object created by startVNASession()
+
+    Desc: Acquires a single VNA trace on the specified input and save to local
+          file.
+    """
+
+    # Recall settings
+    states = {1: (0,1,1,0), 2: (1,0,1,0), 3: (1,1,0,0), 4: (1,1,1,0)}
+    vnaFile = 'EDGES.s1p'
+    vnaAddress = self.settings.get('VNA', 'ip_address')
+
+    # Set switch state to specified input
+    print('Setting switch to input {}...'.format(input))
+    session['device'].setDOState(4, state = states[input][0])
+    session['device'].setDOState(5, state = states[input][1])
+    session['device'].setDOState(6, state = states[input][2])
+    session['device'].setDOState(7, state = states[input][3])
+    time.sleep(2)
+    print('Done.\n')
+
+    # Measure trace
+    print('Measuring trace...')
+    session['socket'].send('INIT:IMM;*OPC?\n')
+    time.sleep(3)
+    print('Done.\n')
+
+    # Store trace onboard VNA
+    print('Storing trace onboard...')
+    session['socket'].send('MMEM:STOR:SNP "{}";*OPC?\n'.format(vnaFile))
+    time.sleep(3)
+    print('Done.\n')
+
+    # Copy file to local pc
+    print('Transferring trace to specified local file...')
+    ftp = ftplib.FTP(vnaAddress)
+    ftp.login("anonymous", "edges@asu.edu")
+    ftp.cwd('\UserData')  # Root folder of VNA                  
+    ftp.retrbinary('RETR {}'.format(vnaFile), open(path, 'wb').write)
+    ftp.delete(vnaFile)
+    ftp.quit()
+    print('Done.\n')
+
+    print('Trace complete.\n')
 
 
 
