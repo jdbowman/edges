@@ -37,14 +37,14 @@ def checkConduit(argv):
        bSave = True
 
   # Abort if we are on the wrong host to check conduit sensors
-  if socket.gethostname() != 'edges-pc-low':
-    
-    print('ERROR: This host is not connected to the conduit sensors.  Aborted.')
-    return False
+#  if socket.gethostname() != 'edges-pc-low':
+#    
+#    print('ERROR: This host is not connected to the conduit sensors.  Aborted.')
+#    return False
 
   # Check the sensors
-  else:
-
+#  else:
+  if (True):
     # Get an instance of the EDGES class
     d = edges.edges()
 

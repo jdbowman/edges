@@ -66,7 +66,7 @@ def checkThermal(argv):
   thermal_cmds = d.getThermalDictionary()
 
   # Open connection to thermal controller
-  connection = d.openThermalConnection()
+  connection = d.openThermalConnection('/dev/ttyUSB1')
   if not connection:
     print('Abort.  No connection to thermal controller.')
     return False
