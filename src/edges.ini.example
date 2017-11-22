@@ -1,0 +1,33 @@
+[Installation]
+homedir:  /home/loco/edges
+datadir:  /home/loco/edges/data
+site: mro
+instrument: 
+
+[Power]
+ip_address: 172.20.1.252
+username: 
+password: 
+receiver_outlet: 
+output_name: power
+
+[Thermal]
+set_temp: 25
+set_voltage: 12
+set_bandwidth: 6
+set_gain: 0
+set_derivative: 0
+power_off_temp: 50
+output_name: thermal
+
+[Environment]
+sensor1_label: Conduit Humidity
+sensor1_unit: %
+sensor2_label: Conduit Temperature
+sensor2_unit: K
+sensor3_label: Frontend Temperature
+sensor3_unit: K
+output_name: conduit
+
+[Spectrometer]
+channels:  32768
