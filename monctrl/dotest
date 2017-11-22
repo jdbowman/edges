@@ -1,3 +1,0 @@
-#!/bin/csh -f
-./edgesim6a -f t240.txt  -pfit 2
-

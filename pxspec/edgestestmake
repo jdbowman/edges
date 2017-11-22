@@ -1,5 +1,0 @@
-#!/bin/bash
-gcc -W -Wall -O3  edgestest.c  -lm
-cp a.out edgestest
-
-

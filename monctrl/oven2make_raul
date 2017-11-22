@@ -1,6 +1,0 @@
-#!/bin/bash
-gcc -W -Wall -O3 oven2_raul.c -lm
-cp a.out oven2_raul
-
-
-
