@@ -8,13 +8,13 @@ LIBS=`pkg-config --libs gtk+-2.0`
 # NOTE: The order of the flags matters!  llabjackusb needs to be near the end (after lm?) and the CFLAGS and LIBS need to be last (for GTK if used)
 
 # WEATHER - A simple program to read from the weather station and display to stdout
-gcc -w -O3 -o weather -lpthread labjack_edges.c u3.c datetime.c weather.c -lm -llabjackusb -lfftw3f -lsig_px14400 $CFLAGS $LIBS
+gcc -w -O3 -o weather -lpthread labjack_edges.c u3.c datetime.c weather.c -lm -llabjackusb $CFLAGS $LIBS
 
 # CONDUIT
-gcc -w -O3 -o conduit -lpthread labjack_edges.c u3.c datetime.c conduit.c -lm -llabjackusb -lfftw3f -lsig_px14400 $CFLAGS $LIBS
+gcc -w -O3 -o conduit -lpthread labjack_edges.c u3.c datetime.c conduit.c -lm -llabjackusb $CFLAGS $LIBS
 
 # CONDUIT2
-gcc -w -O3 -o conduit2 -lpthread labjack_edges.c u3.c datetime.c conduit2.c -lm -llabjackusb -lfftw3f -lsig_px14400 $CFLAGS $LIBS
+gcc -w -O3 -o conduit2 -lpthread labjack_edges.c u3.c datetime.c conduit2.c -lm -llabjackusb $CFLAGS $LIBS
 
 # THERMCTL - A simple program to talk to the thermal controller, logging its set and actual temperature to /disk1/data/thermal.txt.
 gcc -w -O3 -o thermctl thermctl.c -lm

@@ -4,24 +4,17 @@
 #include <string.h>
 #include <sched.h>
 #include <fcntl.h>
-#include <pthread.h>
 #include <errno.h>
 #include <signal.h>
-#include <fftw3.h>
-#include "d1typ6.h"
-//#include "d1proto6.h"
-#include "stdafx.h"
-#include "fileio.h"
+//#include "stdafx.h"
 #include "datetime.h"
-#include "parallelport.h"
-#include "thermalcontroller.h"
 #include "labjack_edges.h"
 
 int main(int argc, char **argv)
 { 
 	double dRack, dTemp, dHum, dFront;
 	int yr, da, hr, mn, sc;
-	const char chWeatherFile[1024] = "/media/DATA/EDGES_data/weather.txt";
+	const char chWeatherFile[1024] = "/media/DATA/data/weather.txt";
 	FILE* fid;
 
 	labjack_open();
