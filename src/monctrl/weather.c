@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 { 
 	double dRack, dTemp, dHum, dFront;
 	int yr, da, hr, mn, sc;
-	const char chWeatherFile[1024] = "/media/DATA/data/weather.txt";
+	const char chWeatherFile[1024] = "/home/loco/edges/data/weather.txt";
 	FILE* fid;
 
 	labjack_open();
