@@ -6,7 +6,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
-#include "stdafx.h"
 #include "datetime.h"
 #include "labjack_edges.h"
 
