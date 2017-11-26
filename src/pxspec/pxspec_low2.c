@@ -50,7 +50,7 @@ void parport(int pdata)
 {
 #define ORIGINAL_DATA 0x3010 //base address of the SYBA Parallel port PCIe Card: NOT USED. Variable DATA (below) is used instead. The card has an address 2010. Raul, 2014/01/16.  
 #define OLD_DATA 0x2010
-#define DATA 0xe000
+#define DATA 0xe010
 	int i;
 	if(pdata == -1) 
 	{
