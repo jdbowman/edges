@@ -45,13 +45,14 @@ void labjack_close()
 // EDGES weather station
 // -- The humidity sensor is connected to FI02
 // -- The temperature sensor is connected to FI03
+// -- The temperature2 sensor is connected to FI01
 // -- The frontend temp sensor is connected to FI00
 //-----------------------------------------------
-void labjack_readWeather(double* outRackTemperature, double* outTemperature, double* outHumidity, double* outFrontend)
+void labjack_readWeather(double* outRackTemperature, double* outTemperature, double* outHumidity, double* outTemperature2, double* outFrontend)
 {
-	double dRack, dTemp, dHum, dFront;
-	double dTempVolt, dHumVolt, dFrontVolt;
-	double dTempRes, dFrontRes;
+	double dRack, dTemp, dTemp2, dHum, dFront;
+	double dTempVolt, dHumVolt, dTemp2Volt, dFrontVolt;
+	double dTempRes, dTemp2Res, dFrontRes;
 	double t1 = -0.000163528;
 	double t2 =  0.000436689;
 	double t3 = -6.483802589e-7;
@@ -68,6 +69,7 @@ void labjack_readWeather(double* outRackTemperature, double* outTemperature, dou
 	DAC1Enable = 0;
 	*outRackTemperature = 0;
 	*outTemperature = 0;
+	*outTemperature2 = 0;
 	*outHumidity = 0;
 	*outFrontend = 0;
 
@@ -82,20 +84,27 @@ void labjack_readWeather(double* outRackTemperature, double* outTemperature, dou
 	// Read the frontend temperature sensor -- FI00
     eAIN(LABJACK_hDevice, &LABJACK_caliInfo, 1, &DAC1Enable, 0, 31, &dFrontVolt, 0, 0, 0, 0, 0, 0); 
 
+	// Read the Temp2 temperature sensor -- FI0???
+    eAIN(LABJACK_hDevice, &LABJACK_caliInfo, 1, &DAC1Enable, 1, 31, &dTemp2Volt, 0, 0, 0, 0, 0, 0); 
+
 	// Read the weather station humidity sensor -- FI02
     eAIN(LABJACK_hDevice, &LABJACK_caliInfo, 1, &DAC1Enable, 2, 31, &dHumVolt, 0, 0, 0, 0, 0, 0); 
 
-	//printf("TempVolt: %4.5f, HumVolt: %4.5f\n", dTempVolt, dHumVolt);
 
 	// Convert temperature voltage to resistance
 	dTempRes = (dTempVolt * r1) / (5.0 - dTempVolt);
+	dTemp2Res = (dTemp2Volt * r1) / (5.0 - dTemp2Volt);
 	dFrontRes = (dFrontVolt * r1) / (5.0 - dFrontVolt);
 
 	// Convert temperature resistance to temperature (in Kelvin) using 
 	// Steinhart-Hart equation 
 	dTemp = 1 / (t1 + t2*log(dTempRes) + t3*pow(log(dTempRes), 3.0));
+	dTemp2 = 1 / (t1 + t2*log(dTemp2Res) + t3*pow(log(dTemp2Res), 3.0));
 	dFront = 1 / (f1 + f2*log(dFrontRes) + f3*pow(log(dFrontRes), 3.0));
-	
+
+	printf("TempVolt: %4.5f, Temp2Volt: %4.5f\n", dTempVolt, dTemp2Volt);
+	printf("TempRes: %4.5f, Temp2Res: %4.5f\n", dTempRes, dTemp2Res);
+
 	// Adjustment of labjack read voltage
 	dHumVolt = dHumVolt * 1000.0 * 1.5;
 
@@ -107,7 +116,8 @@ void labjack_readWeather(double* outRackTemperature, double* outTemperature, dou
 	// Corrected relative humidity (using temperature in Kelvin) -- this seems to be small correction
 	dHum = dHum + (dTemp - 23.0 - 273.15)*0.05;
 
-	*outTemperature = dTemp; 
+	*outTemperature = dTemp;
+	*outTemperature2 = dTemp2;
 	*outFrontend = dFront;
 	*outHumidity = dHum;
 

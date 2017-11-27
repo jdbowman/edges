@@ -11,7 +11,7 @@
 
 int main(int argc, char **argv)
 { 
-	double dRack, dTemp, dHum, dFront;
+	double dRack, dTemp, dTemp2, dHum, dFront;
 	int yr, da, hr, mn, sc;
 	const char chWeatherFile[1024] = "/home/loco/edges/data/conduit.txt";
 	const char chLiveFile[1024] = "/home/loco/edges/live/conduit_live.txt";
@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 
 	labjack_open();
 
-	labjack_readWeather(&dRack, &dTemp, &dHum, &dFront);
+	labjack_readWeather(&dRack, &dTemp, &dHum, &dTemp2, &dFront);
 	printf("Weather - Rack: %5.2f,  Temp: %5.2f,  Hum: %5.2f, Frontend: %5.2f\n", dRack, dTemp, dHum, dFront);
 
 	// Get the time and date

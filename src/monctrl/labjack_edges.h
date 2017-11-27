@@ -14,7 +14,7 @@ int 				LABJACK_localID; 		// Labjack ID
 //-----------------------------------------------
 void labjack_open();
 void labjack_close();
-void labjack_readWeather(double* outRackTemperature, double* outTemperature, double* outHumidity, double* outFrontend);
+void labjack_readWeather(double* outRackTemperature, double* outTemperature, double* outHumidity, double* outTemperature2, double* outFrontend);
 void labjack_readConduit2(double* outRackTemperature, double *outTemperature, double* outHumidity, double* outFrontend);
 
 //-----------------------------------------------

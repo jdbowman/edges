@@ -12,15 +12,15 @@
 
 int main(int argc, char **argv)
 { 
-	double dRack, dTemp, dHum, dFront;
+	double dRack, dTemp, dHum, dTemp2, dFront;
 	int yr, da, hr, mn, sc;
 	const char chWeatherFile[1024] = "/home/loco/edges/data/weather.txt";
 	FILE* fid;
 
 	labjack_open();
 
-	labjack_readWeather(&dRack, &dTemp, &dHum, &dFront);
-	printf("Weather - Rack: %5.2f,  Temp: %5.2f,  Hum: %5.2f, Frontend: %5.2f\n", dRack, dTemp, dHum, dFront);
+	labjack_readWeather(&dRack, &dTemp, &dHum, &dTemp2, &dFront);
+	printf("Weather - Rack: %5.2f,  Temp: %5.2f,  Hum: %5.2f, Temp2: %5.2f,  Frontend: %5.2f\n", dRack, dTemp, dHum, dTemp2, dFront);
 
 	// Get the time and date
    	toyrday(readclock(), &yr, &da, &hr, &mn, &sc);
