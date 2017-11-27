@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 { 
 	double dRack, dTemp, dHum, dTemp2, dFront;
 	int yr, da, hr, mn, sc;
-	const char chWeatherFile[1024] = "/home/loco/edges/data/weather.txt";
+	const char chWeatherFile[1024] = "/home/loco/edges/data/weather2.txt";
 	FILE* fid;
 
 	labjack_open();
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 	} 
 
    	// Write to log file
-	fprintf(fid, "%4d:%03d:%02d:%02d:%02d  rack_temp %7.2f Kelvin, ambient_temp %7.2f Kelvin, ambient_hum %7.2f percent, frontend %7.2f Kelvin\n", yr, da, hr, mn, sc, dRack, dTemp, dHum, dFront);
+	fprintf(fid, "%4d:%03d:%02d:%02d:%02d  rack_temp %7.2f Kelvin, ambient_temp %7.2f Kelvin, ambient_hum %7.2f percent, frontend %7.2f Kelvin, rcv3_lna %7.2f Kelvin\n", yr, da, hr, mn, sc, dRack, dTemp, dHum, dFront, dTemp2);
  
 	fclose(fid);
 
