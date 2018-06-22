@@ -168,17 +168,20 @@ void Spectrometer::run()
       switch(i) {
         case 0:
           m_pCurrentAccum = m_accumAntenna;
+          break;
         case 1:
           m_pCurrentAccum = m_accumAmbientLoad;
+          break;
         case 2:
           m_pCurrentAccum = m_accumHotLoad;
+          break;
       }
 
       for (unsigned int w=0; w<m_pFFT->getNumWindows(); w++) {
         m_pCurrentAccum[w].clear();
         m_pCurrentAccum[w].setStartTime();
       }
-      
+
       // Acquire data
       m_pDigitizer->acquire(m_uNumSamplesPerAccumulation);
 
@@ -218,12 +221,11 @@ void Spectrometer::run()
     printf("Spectrometer: Write time = %6.3f seconds\n", writeTimer.get());
     printf("Spectrometer: Duty cycle = %6.3f\n", dDutyCycle_Overall);
     printf("Spectrometer: Drop fraction = %6.3f\n\n", 1.0 * m_uDrops / (m_uNumSamplesPerAccumulation + m_uDrops));
-    printf("Spectrometer: Accumulated spectrum at B/3 (p0, p1, p2) = %8.3f, %8.3f, %8.3f\n", 
-       m_accumAntenna[0].get(m_uNumChannels/3),
-       m_accumAmbientLoad[0].get(m_uNumChannels/3),
-       m_accumHotLoad[0].get(m_uNumChannels/3));
     for (unsigned int i=0; i<3; i++) {
-      printf("Spectrometer: p%d acdmin, adcmax = %6.3f, %6.3f\n", i, m_accumAntenna[0].getADCmin(), m_accumAntenna[0].getADCmax());
+      printf("Spectrometer: p0 (antenna) tap%d -- acdmin = %6.3f,  adcmax = %6.3f,  value at B/3 = %6.3f\n", i, m_accumAntenna[i].getADCmin(), m_accumAntenna[i].getADCmax(), m_accumAntenna[i].get(m_uNumChannels/3));
+      printf("Spectrometer: p1 (ambient) tap%d -- acdmin = %6.3f,  adcmax = %6.3f,  value at B/3 = %6.3f\n", i, m_accumAmbientLoad[i].getADCmin(), m_accumAmbientLoad[i].getADCmax(), m_accumAmbientLoad[i].get(m_uNumChannels/3));
+      printf("Spectrometer: p2 (hot)     tap%d -- acdmin = %6.3f,  adcmax = %6.3f,  value at B/3 = %6.3f\n", i, m_accumHotLoad[i].getADCmin(), m_accumHotLoad[i].getADCmax(), m_accumHotLoad[i].get(m_uNumChannels/3));
+
     }
   }
 

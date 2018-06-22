@@ -168,7 +168,6 @@ bool FFTPool::setWindowFunction(FFT_REAL_TYPE* pWindow, unsigned int uLength,
   case 2:
     m_pWindow[1] = &(m_pWindowHolder[(unsigned int) (0.5 * m_uNumFFT)]);
     break;
-
   case 3:
     m_pWindow[1] = &(m_pWindowHolder[(unsigned int) (1.0/3.0 * m_uNumFFT)]);
     m_pWindow[2] = &(m_pWindowHolder[(unsigned int) (2.0/3.0 * m_uNumFFT)]);
@@ -296,8 +295,10 @@ bool FFTPool::push(unsigned short* pIn, unsigned int uLength)
 
   // Copy the incoming data into our buffer
   for (unsigned int i=0; i<m_uNumFFT; i++) {
-    pBuffer[i] = ((FFT_REAL_TYPE) pIn[i] - 32768.0) / 32768.0;
+    pBuffer[i] = (((FFT_REAL_TYPE) pIn[i]) - 32768.0) / 32768.0;
   }
+
+printf("%d, ", pIn[8000]);
 
   // Put the buffer into the processing queue
   pushFull(pBuffer);
