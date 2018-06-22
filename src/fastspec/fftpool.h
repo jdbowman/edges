@@ -27,7 +27,16 @@
 #endif
 
 
-#define fftpool_callback_fptr   std::function<void(FFT_REAL_TYPE*, unsigned int, double, double)>
+struct FFTData {
+  FFT_REAL_TYPE* pData;
+  unsigned int uNumChannels;
+  double dADCmin;
+  double dADCmax;
+  unsigned int uTap;
+};
+
+
+#define fftpool_callback_fptr   std::function<void(const FFTData*)>
 
 #define THREAD_SLEEP_MICROSECONDS 5
 

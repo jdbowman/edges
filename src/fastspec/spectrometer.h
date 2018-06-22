@@ -24,7 +24,9 @@ class Spectrometer {
     Digitizer*      m_pDigitizer;
     FFTPool*        m_pFFT;
     Switch*         m_pSwitch;
-    Accumulator     m_accum[3];
+    Accumulator     m_accumAntenna[3];
+    Accumulator     m_accumAmbientLoad[3];
+    Accumulator     m_accumHotLoad[3];
     Accumulator*    m_pCurrentAccum;
     unsigned long   m_uNumFFT;
     unsigned long   m_uNumChannels;
@@ -45,6 +47,7 @@ class Spectrometer {
     // Private helper functions
     bool isStop();
     std::string getFileName();
+    std::string getFileName(unsigned int);
 
   public:
 
@@ -61,7 +64,7 @@ class Spectrometer {
 
     // Callbacks
     unsigned long onTransfer(unsigned short*, unsigned int, unsigned long);
-    void onSpectrum(FFT_REAL_TYPE*, unsigned int, double, double);
+    void onSpectrum(const FFTData*);
 
 };
 

@@ -382,6 +382,9 @@ void FFTPool::process( FFT_REAL_TYPE* pIn, FFT_REAL_TYPE* pLocal1,
     }
   }
 
+
+  FFTData sData;
+
   // For each application of the window function
   for (unsigned int w=0; w<m_uNumWindows; w++) {
 
@@ -397,13 +400,18 @@ void FFTPool::process( FFT_REAL_TYPE* pIn, FFT_REAL_TYPE* pLocal1,
     // EDGES codes
     for (i = 0; i < m_uNumChannels; i++) 
     { 
-      pLocal3[i] += pLocal2[i][0]*pLocal2[i][0] + pLocal2[i][1]*pLocal2[i][1];
+      pLocal3[i] = pLocal2[i][0]*pLocal2[i][0] + pLocal2[i][1]*pLocal2[i][1];
     }
-  }
 
-  // Send the resulting spectrum to the callback function for handling
-  pthread_mutex_lock(&m_mutexCallback);
-  m_pCallback(pLocal3, m_uNumChannels, (double) dMin, (double) dMax);
-  pthread_mutex_unlock(&m_mutexCallback);
-  
+    sData.pData = pLocal3;
+    sData.uNumChannels = m_uNumChannels;
+    sData.dADCmin = dMin;
+    sData.dADCmax = dMax;
+    sData.uTap = w;
+
+    // Send the resulting spectrum to the callback function for handling
+    pthread_mutex_lock(&m_mutexCallback);
+    m_pCallback(&sData);
+    pthread_mutex_unlock(&m_mutexCallback);
+  }
 } // process()

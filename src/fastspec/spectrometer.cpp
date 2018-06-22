@@ -42,7 +42,11 @@ Spectrometer::Spectrometer(unsigned long uNumChannels,
 
   // Initialize the Accumulators
   for (int i=0; i<3; i++) {
-    m_accum[i].init( m_uNumChannels, m_dStartFreq, 
+    m_accumAntenna[i].init( m_uNumChannels, m_dStartFreq, 
+                     m_dStopFreq, m_dChannelFactor );
+    m_accumAmbientLoad[i].init( m_uNumChannels, m_dStartFreq, 
+                     m_dStopFreq, m_dChannelFactor );
+    m_accumHotLoad[i].init( m_uNumChannels, m_dStartFreq, 
                      m_dStopFreq, m_dChannelFactor );
   }
   m_pCurrentAccum = NULL;
@@ -54,8 +58,7 @@ Spectrometer::Spectrometer(unsigned long uNumChannels,
   // Initialize the FFT pool
   m_uNumFFT = 2*m_uNumChannels;
   m_pFFT = pFFT;
-  m_pFFT->setCallback(std::bind( &Spectrometer::onSpectrum, 
-                                 this, _1, _2, _3, _4) );
+  m_pFFT->setCallback(std::bind( &Spectrometer::onSpectrum, this, _1 ) );
 
   m_uDrops = 0;
 
@@ -94,10 +97,29 @@ string Spectrometer::getFileName()
 
   if (m_bDirectory)
   {
-    TimeKeeper startTime = m_accum[0].getStartTime();
+    TimeKeeper startTime = m_accumAntenna[0].getStartTime();
     string sDateString = startTime.getFileString(2);
     string sFilePath = m_sOutput + "/" + to_string(startTime.year()) + "/" 
                         + sDateString + ".acq";
+    return sFilePath;
+
+  } else {
+    return m_sOutput;
+  }
+}
+
+
+// ----------------------------------------------------------------------------
+// getFileName
+// ----------------------------------------------------------------------------
+string Spectrometer::getFileName(unsigned int uTap)
+{
+
+  if (m_bDirectory)
+  {
+    TimeKeeper startTime = m_accumAntenna[0].getStartTime();
+    string sDateString = startTime.getFileString(2);
+    string sFilePath = m_sOutput + "/" + to_string(startTime.year()) + "/" + sDateString + "_tap" + std::to_string(uTap) + ".acq";
     return sFilePath;
 
   } else {
@@ -113,7 +135,6 @@ string Spectrometer::getFileName()
 void Spectrometer::run()
 { 
   m_bLocalStop = false;
-  unsigned int i;
   Timer dutyCycleTimer;
   Timer writeTimer;
   double dDutyCycle_Overall;
@@ -130,7 +151,7 @@ void Spectrometer::run()
     dutyCycleTimer.tic();
 
     // Cycle between switch states
-    for (i=0; i<3; i++) {
+    for (unsigned int i=0; i<3; i++) {
 
       printf("Spectrometer: Starting switch state %d...\n", i);
 
@@ -144,15 +165,27 @@ void Spectrometer::run()
       m_uDrops = 0;
 
       // Reset the accumulator and record the start time
-      m_pCurrentAccum = &m_accum[i];
-      m_pCurrentAccum->clear();
-      m_pCurrentAccum->setStartTime();
+      switch(i) {
+        case 0:
+          m_pCurrentAccum = m_accumAntenna;
+        case 1:
+          m_pCurrentAccum = m_accumAmbientLoad;
+        case 2:
+          m_pCurrentAccum = m_accumHotLoad;
+      }
 
+      for (unsigned int w=0; w<m_pFFT->getNumWindows(); w++) {
+        m_pCurrentAccum[w].clear();
+        m_pCurrentAccum[w].setStartTime();
+      }
+      
       // Acquire data
       m_pDigitizer->acquire(m_uNumSamplesPerAccumulation);
 
       // Note the stop time
-      m_pCurrentAccum->setStopTime();
+      for (unsigned int w=0; w<m_pFFT->getNumWindows(); w++) {
+        m_pCurrentAccum[w].setStopTime();
+      }
     }
 
     // Wait for any remaining FFT processes to finish
@@ -162,16 +195,18 @@ void Spectrometer::run()
     // keeps the output values at a consistent level regardless of number of
     // window taps applied (done here rather than in FFTPool to reduce overall
     // computations since it only needs to be done once here).
-    if (m_pFFT->getNumWindows() > 1) {
-      m_accum[0].multiply(1.0 / m_pFFT->getNumWindows());
-      m_accum[1].multiply(1.0 / m_pFFT->getNumWindows());
-      m_accum[2].multiply(1.0 / m_pFFT->getNumWindows());
-    }
+    //if (m_pFFT->getNumWindows() > 1) {
+    //  m_accum[0].multiply(1.0 / m_pFFT->getNumWindows());
+    //  m_accum[1].multiply(1.0 / m_pFFT->getNumWindows());
+    //  m_accum[2].multiply(1.0 / m_pFFT->getNumWindows());
+    //}
 
     // Write to ACQ
     printf("\nSpectrometer: Writing cycle data to file...\n");
     writeTimer.tic();
-    write_switch_cycle(getFileName(), m_accum[0], m_accum[1], m_accum[2]);
+    for (unsigned int w=0; w<m_pFFT->getNumWindows(); w++) {
+      write_switch_cycle(getFileName(w), m_accumAntenna[w], m_accumAmbientLoad[w], m_accumHotLoad[w]);      
+    }
     writeTimer.toc();
 
     // Calculate overall duty cycle
@@ -184,11 +219,11 @@ void Spectrometer::run()
     printf("Spectrometer: Duty cycle = %6.3f\n", dDutyCycle_Overall);
     printf("Spectrometer: Drop fraction = %6.3f\n\n", 1.0 * m_uDrops / (m_uNumSamplesPerAccumulation + m_uDrops));
     printf("Spectrometer: Accumulated spectrum at B/3 (p0, p1, p2) = %8.3f, %8.3f, %8.3f\n", 
-       m_accum[0].get(m_uNumChannels/3),
-       m_accum[1].get(m_uNumChannels/3),
-       m_accum[2].get(m_uNumChannels/3));
-    for (i=0; i<3; i++) {
-      printf("Spectrometer: p%d acdmin, adcmax = %6.3f, %6.3f\n", i, m_accum[i].getADCmin(), m_accum[i].getADCmax());
+       m_accumAntenna[0].get(m_uNumChannels/3),
+       m_accumAmbientLoad[0].get(m_uNumChannels/3),
+       m_accumHotLoad[0].get(m_uNumChannels/3));
+    for (unsigned int i=0; i<3; i++) {
+      printf("Spectrometer: p%d acdmin, adcmax = %6.3f, %6.3f\n", i, m_accumAntenna[0].getADCmin(), m_accumAntenna[0].getADCmax());
     }
   }
 
@@ -279,8 +314,7 @@ unsigned long Spectrometer::onTransfer( unsigned short* pBuffer,
 // ----------------------------------------------------------------------------
 // onSpectrum() -- Do something with a spectrum returned from the FFTPool
 // ----------------------------------------------------------------------------
-void Spectrometer::onSpectrum( FFT_REAL_TYPE* pSpectrum, unsigned int uLength, 
-                               double dADCmin, double dADCmax ) 
+void Spectrometer::onSpectrum(const FFTData* pData) 
 {  
-  m_pCurrentAccum->add(pSpectrum, uLength, dADCmin, dADCmax);
+  m_pCurrentAccum[pData->uTap].add(pData->pData, pData->uNumChannels, pData->dADCmin, pData->dADCmax);
 } // onSpectrum()
