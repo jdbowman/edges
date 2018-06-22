@@ -104,7 +104,7 @@ string Spectrometer::getFileName()
     return sFilePath;
 
   } else {
-    return m_sOutput;
+    return m_sOutput + ".acq";
   }
 }
 
@@ -123,7 +123,7 @@ string Spectrometer::getFileName(unsigned int uTap)
     return sFilePath;
 
   } else {
-    return m_sOutput;
+    return m_sOutput + "_tap" + std::to_string(uTap) + ".acq";
   }
 }
 
