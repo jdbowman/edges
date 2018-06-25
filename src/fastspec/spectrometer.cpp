@@ -204,6 +204,13 @@ void Spectrometer::run()
     //  m_accum[2].multiply(1.0 / m_pFFT->getNumWindows());
     //}
 
+    // Normalize by 0.5 to be match pxspec
+    for (unsigned int w=0; w<m_pFFT->getNumWindows(); w++) {
+      m_accumAntenna[w].multiply(0.5);
+      m_accumAmbientLoad[w].multiply(0.5);
+      m_accumHotLoad[w].multiply(0.5);
+    }
+
     // Write to ACQ
     printf("\nSpectrometer: Writing cycle data to file...\n");
     writeTimer.tic();

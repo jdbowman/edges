@@ -2,7 +2,7 @@
 //#define FFT_SINGLE_PRECISION in Makefile
 #define DEFAULT_INI_FILE "/home/loco/test.ini" //"/home/loco/edges.ini"
 
-#define SIMULATE
+//#define SIMULATE
 #ifdef SIMULATE
   #include "pxsim.h"
   #define PX_DIGITIZER PXSim

@@ -298,8 +298,6 @@ bool FFTPool::push(unsigned short* pIn, unsigned int uLength)
     pBuffer[i] = (((FFT_REAL_TYPE) pIn[i]) - 32768.0) / 32768.0;
   }
 
-printf("%d, ", pIn[8000]);
-
   // Put the buffer into the processing queue
   pushFull(pBuffer);
 
