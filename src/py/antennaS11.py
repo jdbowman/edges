@@ -24,6 +24,7 @@ def antennaS11(argv):
   result = True
   parser = argparse.ArgumentParser(description= 'Acquire OSL and antenna traces through the receiver to produce a calibrated antenna S11 measurement.')
   parser.add_argument('folder', help='Output folder to save traces.')
+  parser.add_argument('-m', '--message', nargs=1, help='Store a comment with the measurement')
   parser.add_argument('-e', '--external', help='Apply correction from lab measurement of external OSL.  Specify calibration folder')
   parser.add_argument('-f', '--freq', nargs='?', default=75e6, type=float, help='Frequency (Hz) for normalizing the external cal fits')
   parser.add_argument('-n', '--npoly', nargs='?', default=10, type=int, help='Number of polynomial terms in external cal fits')
@@ -119,7 +120,7 @@ def antennaS11(argv):
 
     # Concatenate label text and units
     fullLabels = ["{} [{}]".format(l, u) for l, u in zip(labels, units)]
-
+	
     # Write to EDGES file record
     result = d.writeRecord(subdir, 'sensors', timestamp, values, fullLabels, breaklevel=5)
 
@@ -152,7 +153,12 @@ def antennaS11(argv):
     # Close the VNA session  
     d.stopVNASession(session)
 
-  ## end if args.reuse 
+  ## end if args.revisit
+
+  # write comment if there is one
+  if args.message:
+    result = d.writeText(subdir, 'message', timestamp, args.message[0], 'Message', breaklevel=5)
+    print('\nMessage: ' + args.message[0] + '\n') 
 
   if gammas == None:
     return False

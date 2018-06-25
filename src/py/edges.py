@@ -638,6 +638,42 @@ class edges:
 
 
 
+  def writeText(self, subdir, suffix, timestamp, text, header, breaklevel=2):
+    """
+    Name: edges.writeText(subdir, suffix, timestamp, data, labels, breaklevel=2)
+
+    Args: subdir - subdirectory under the main EDGES data directory
+          suffix - string to append to the filename
+          timestamp - Python dateime object giving time of data acquisition 
+                      (used for filename and as first entry for record)
+          text - The text to write to the file
+          header - String for the fist line
+          (optional) breaklevel - How often to start a new file (default here is 2)
+                                    1 = Once per year
+                                    2 = Once per day
+                                    3 = Once per hour
+                                    4 = Once per minute
+                                    5 = Once per second
+          
+    Desc: Write a new row of data to a file following the conventions described
+          in edges.appendToTextFile().  The data row is either appended to an
+          existing file or a new file is created at the internval specified by
+          the "breaklevel" argument. 
+          
+    """ 
+
+    filename = self.getFileDateString(timestamp, breaklevel) + '_' + suffix + '.txt'
+    path = self.datadir + '/' + subdir + '/' + filename
+    timestring = datetime.strftime(timestamp, '%Y:%j:%H:%M:%S')
+    format= "%s '%s'"
+
+    return self.appendToTextFile( path, 
+                                  (timestring, ) + tuple([text]), 
+                                  format, 
+                                  ('Timestamp', ) + tuple([header]) )
+
+
+
   def writeRecord(self, subdir, suffix, timestamp, data, labels, breaklevel=2):
     """
     Name: edges.writeRecord(subdir, suffix, timestamp, data, labels, breaklevel=2)
@@ -647,7 +683,7 @@ class edges:
           timestamp - Python dateime object giving time of data acquisition 
                       (used for filename and as first entry for record)
           data - The data to write to the record file (one-dim array)
-          labels - String of column names the data entries
+          labels - String of column names for the data entries
           (optional) breaklevel - How often to start a new file (default here is 2)
                                     1 = Once per year
                                     2 = Once per day
