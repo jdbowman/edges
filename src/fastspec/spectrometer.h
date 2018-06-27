@@ -41,6 +41,7 @@ class Spectrometer {
     bool*           m_pbGlobalStop;
     unsigned long   m_uDrops;
     std::string     m_sOutput;
+    std::string     m_sInstrument;
     bool            m_bDirectory;
 
 
@@ -60,7 +61,7 @@ class Spectrometer {
     void run();
     void sendStop();
 
-    void setOutput(const string&, bool);
+    void setOutput(const string&, const string&, bool);
 
     // Callbacks
     unsigned long onTransfer(unsigned short*, unsigned int, unsigned long);

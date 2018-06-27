@@ -1,6 +1,6 @@
 
 //#define FFT_SINGLE_PRECISION in Makefile
-#define DEFAULT_INI_FILE "/home/loco/test.ini" //"/home/loco/edges.ini"
+#define DEFAULT_INI_FILE "/home/loco/edges.ini" 
 
 //#define SIMULATE
 #ifdef SIMULATE
@@ -153,8 +153,10 @@ int main(int argc, char* argv[])
 
       } else if (sArg.compare("-f") == 0) { 
         // Specify an output file instead of the usual directory structure
-        if (argc > i) sOutput = argv[i+1]; 
-        bDirectory = false;
+        if (argc > i) {
+          sOutput = argv[i+1]; 
+          bDirectory = false;
+        }
       } else if (sArg.compare("-h") == 0) { 
         print_help();
         return 0;
@@ -191,7 +193,7 @@ int main(int argc, char* argv[])
     double dBandwidth = dAcquisitionRate / 2.0;
     unsigned int uNumFFT = uNumChannels * 2;
     if (bDirectory) { 
-      sOutput = sDataDir; 
+      sOutput = sDataDir + "/" + sSite + "/" + sInstrument; 
     }
 
     // -----------------------------------------------------------------------
@@ -273,7 +275,7 @@ int main(int argc, char* argv[])
                        &sw, 
                        &bStopSignal );
 
-    spec.setOutput(sOutput, bDirectory);
+    spec.setOutput(sOutput, sInstrument, bDirectory);
 
     // -----------------------------------------------------------------------
     // Take data until a SIGINT is received

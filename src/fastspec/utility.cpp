@@ -226,7 +226,7 @@ double dOut = 0;
       dOut = 10.0 * log10( pSpectrum[i] / (uNumAccums*uLength*2.0) ) - 38.3;
     }
 
-    if (i==20000) { printf("%8.6f\n", dOut); }
+    //if (i==20000) { printf("%8.6f\n", dOut); }
 
     k = -(int)(dOut * 1e05);
     if (k > 16700000) {

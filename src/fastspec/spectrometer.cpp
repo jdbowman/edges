@@ -79,11 +79,12 @@ Spectrometer::~Spectrometer()
 // ----------------------------------------------------------------------------
 // setOutput
 // ----------------------------------------------------------------------------
-void Spectrometer::setOutput(const string& sOutput, bool bDirectory)
+void Spectrometer::setOutput(const string& sOutput, const string& sInstrument, bool bDirectory)
 {
   printf("Spectrometer: setOutput: %s\n", sOutput.c_str());
 
   m_sOutput = sOutput;
+  m_sInstrument = sInstrument;
   m_bDirectory = bDirectory;
 }
 
@@ -100,7 +101,7 @@ string Spectrometer::getFileName()
     TimeKeeper startTime = m_accumAntenna[0].getStartTime();
     string sDateString = startTime.getFileString(2);
     string sFilePath = m_sOutput + "/" + to_string(startTime.year()) + "/" 
-                        + sDateString + ".acq";
+                        + sDateString + "_" + m_sInstrument + ".acq";
     return sFilePath;
 
   } else {
@@ -119,7 +120,7 @@ string Spectrometer::getFileName(unsigned int uTap)
   {
     TimeKeeper startTime = m_accumAntenna[0].getStartTime();
     string sDateString = startTime.getFileString(2);
-    string sFilePath = m_sOutput + "/" + to_string(startTime.year()) + "/" + sDateString + "_tap" + std::to_string(uTap) + ".acq";
+    string sFilePath = m_sOutput + "/" + to_string(startTime.year()) + "/" + sDateString + "_tap" + std::to_string(uTap) + "_" + m_sInstrument + ".acq";
     return sFilePath;
 
   } else {
@@ -137,6 +138,7 @@ void Spectrometer::run()
   m_bLocalStop = false;
   Timer dutyCycleTimer;
   Timer writeTimer;
+  TimeKeeper tk;
   double dDutyCycle_Overall;
   double dDutyCycle_FFT;
 
@@ -153,6 +155,7 @@ void Spectrometer::run()
     // Cycle between switch states
     for (unsigned int i=0; i<3; i++) {
 
+      tk.setNow();
       printf("Spectrometer: Starting switch state %d...\n", i);
 
       // Change receiver switch state and pause briefly for it to take effect
@@ -194,23 +197,6 @@ void Spectrometer::run()
     // Wait for any remaining FFT processes to finish
     m_pFFT->waitForEmpty();
 
-    // Normalize the accumulation if we used multiple window function taps.  This
-    // keeps the output values at a consistent level regardless of number of
-    // window taps applied (done here rather than in FFTPool to reduce overall
-    // computations since it only needs to be done once here).
-    //if (m_pFFT->getNumWindows() > 1) {
-    //  m_accum[0].multiply(1.0 / m_pFFT->getNumWindows());
-    //  m_accum[1].multiply(1.0 / m_pFFT->getNumWindows());
-    //  m_accum[2].multiply(1.0 / m_pFFT->getNumWindows());
-    //}
-
-    // Normalize by 0.5 to be match pxspec
-    for (unsigned int w=0; w<m_pFFT->getNumWindows(); w++) {
-      m_accumAntenna[w].multiply(0.5);
-      m_accumAmbientLoad[w].multiply(0.5);
-      m_accumHotLoad[w].multiply(0.5);
-    }
-
     // Write to ACQ
     printf("\nSpectrometer: Writing cycle data to file...\n");
     writeTimer.tic();
@@ -224,16 +210,18 @@ void Spectrometer::run()
     dDutyCycle_Overall = 3.0 * m_uNumSamplesPerAccumulation / (2.0 * 1e6 * m_dBandwidth) / dutyCycleTimer.get();
     dDutyCycle_FFT = 1.0 * m_uNumSamplesPerAccumulation / (m_uNumSamplesPerAccumulation + m_uDrops); 
 
-    printf("Spectrometer: Cycle time = %6.3f seconds\n", dutyCycleTimer.get());
-    printf("Spectrometer: Write time = %6.3f seconds\n", writeTimer.get());
-    printf("Spectrometer: Duty cycle = %6.3f\n", dDutyCycle_Overall);
-    printf("Spectrometer: Drop fraction = %6.3f\n\n", 1.0 * m_uDrops / (m_uNumSamplesPerAccumulation + m_uDrops));
+    printf("Spectrometer: Cycle time  = %6.3f seconds\n", dutyCycleTimer.get());
+    printf("Spectrometer: Switch time = %6.3f seconds\n", 3*SWITCH_SLEEP_MICROSECONDS/1e6);
+    printf("Spectrometer: Write time  = %6.3f seconds\n", writeTimer.get());
+    printf("Spectrometer: Duty cycle  = %6.3f\n", dDutyCycle_Overall);
+    printf("Spectrometer: Drop fraction = %6.3f\n", 1.0 * m_uDrops / (m_uNumSamplesPerAccumulation + m_uDrops));
     for (unsigned int i=0; i<3; i++) {
-      printf("Spectrometer: p0 (antenna) tap%d -- acdmin = %6.3f,  adcmax = %6.3f,  value at B/3 = %6.3f\n", i, m_accumAntenna[i].getADCmin(), m_accumAntenna[i].getADCmax(), m_accumAntenna[i].get(m_uNumChannels/3));
-      printf("Spectrometer: p1 (ambient) tap%d -- acdmin = %6.3f,  adcmax = %6.3f,  value at B/3 = %6.3f\n", i, m_accumAmbientLoad[i].getADCmin(), m_accumAmbientLoad[i].getADCmax(), m_accumAmbientLoad[i].get(m_uNumChannels/3));
-      printf("Spectrometer: p2 (hot)     tap%d -- acdmin = %6.3f,  adcmax = %6.3f,  value at B/3 = %6.3f\n", i, m_accumHotLoad[i].getADCmin(), m_accumHotLoad[i].getADCmax(), m_accumHotLoad[i].get(m_uNumChannels/3));
+      printf("Spectrometer: tap%d p0 (antenna) -- acdmin = %6.3f,  adcmax = %6.3f,  value at B/3 = %6.3f\n", i, m_accumAntenna[i].getADCmin(), m_accumAntenna[i].getADCmax(), m_accumAntenna[i].get(m_uNumChannels/3));
+      printf("Spectrometer: tap%d p1 (ambient) -- acdmin = %6.3f,  adcmax = %6.3f,  value at B/3 = %6.3f\n", i, m_accumAmbientLoad[i].getADCmin(), m_accumAmbientLoad[i].getADCmax(), m_accumAmbientLoad[i].get(m_uNumChannels/3));
+      printf("Spectrometer: tap%d p2 (hot)     -- acdmin = %6.3f,  adcmax = %6.3f,  value at B/3 = %6.3f\n", i, m_accumHotLoad[i].getADCmin(), m_accumHotLoad[i].getADCmax(), m_accumHotLoad[i].get(m_uNumChannels/3));
 
     }
+    printf("\n");
   }
 
 } // run()
@@ -325,5 +313,9 @@ unsigned long Spectrometer::onTransfer( unsigned short* pBuffer,
 // ----------------------------------------------------------------------------
 void Spectrometer::onSpectrum(const FFTData* pData) 
 {  
-  m_pCurrentAccum[pData->uTap].add(pData->pData, pData->uNumChannels, pData->dADCmin, pData->dADCmax);
+  // JDB note: we divide adcmin and adcmax by 2 here to be backwards compatible 
+  // with pxspec.  No other changes to the raw samples or caclculated spectrum 
+  // are necessary.  This limits adcmin and adcmax to +/- 0.5 rather than 1.0
+  m_pCurrentAccum[pData->uTap].add(pData->pData, pData->uNumChannels, pData->dADCmin/2, pData->dADCmax/2);
+
 } // onSpectrum()

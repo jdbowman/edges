@@ -295,7 +295,7 @@ bool FFTPool::push(unsigned short* pIn, unsigned int uLength)
 
   // Copy the incoming data into our buffer
   for (unsigned int i=0; i<m_uNumFFT; i++) {
-    pBuffer[i] = (((FFT_REAL_TYPE) pIn[i]) - 32768.0) / 32768.0;
+    pBuffer[i] =  (((FFT_REAL_TYPE) pIn[i]) - 32768.0) / 32768.0;
   }
 
   // Put the buffer into the processing queue
