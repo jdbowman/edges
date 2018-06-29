@@ -214,13 +214,13 @@ void Spectrometer::run()
     }
 
     // Write to ACQ
-    printf("\nSpectrometer: Writing cycle data to file...\n");
     writeTimer.tic();
 
     if (m_bWriteTaps) {
 
       // Write each tap to a separate file
       for (unsigned int w=0; w<m_pFFT->getNumTaps(); w++) {
+        printf("\nSpectrometer: Writing cycle data to file: %s\n", getFileName(w).c_str());
         write_switch_cycle(getFileName(w), m_accumAntenna[w], m_accumAmbientLoad[w], m_accumHotLoad[w]);      
       }
 
@@ -237,6 +237,7 @@ void Spectrometer::run()
       }
 
       // Write to single file
+      printf("\nSpectrometer: Writing cycle data to file: %s\n", getFileName().c_str());
       write_switch_cycle(getFileName(), m_accumAntenna[0], m_accumAmbientLoad[0], m_accumHotLoad[0]);      
     }
 
