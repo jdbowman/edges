@@ -58,6 +58,8 @@ class Accumulator {
       }
     }
 
+
+
     template<typename T>
     bool add(const T* pSpectrum, unsigned int uLength, double dADCmin, double dADCmax) 
     {
@@ -99,6 +101,38 @@ class Accumulator {
       m_dTemperature = 0;
     }
 
+    bool combine(const Accumulator* pAccum) 
+    {
+      // Abort if there isn't valid data to include
+      if ((pAccum->m_pSpectrum == NULL) || (pAccum->m_uDataLength != m_uDataLength)) {
+        printf("Failed to combine accumulators.\n");
+        return false;
+      }
+
+      // Take the outer bounds of the start and stop times
+      if (pAccum->m_startTime < m_startTime) {
+        m_startTime.set(pAccum->m_startTime.secondsSince1970());
+      }
+
+      if (pAccum->m_stoptTime > m_stopTime) {
+        m_stopTime.set(pAccum->m_stopTime.secondsSince1970());
+      } 
+
+      // Take the outer bounds of the ADC min/max records
+      m_dADCmin = (pAccum->dADCmin < m_dADCmin) ? pAccum->dADCmin : m_dADCmin;
+      m_dADCmax = (pAccum->dADCmax > m_dADCmax) ? pAccum->dADCmax : m_dADCmax;
+
+      // Increment the block counter
+      m_uNumAccums += pAccum->m_numAccums;
+
+      // Add the new spectrum to the accumulation 
+      for (unsigned int n=0; n<m_uDataLength; n++) {
+        m_pSpectrum[n] += pAccum->m_pSpectrum[n];
+      }
+
+      return true;
+    }
+
     ACCUM_TYPE get(unsigned int iIndex) 
     { 
       if (m_pSpectrum) {
@@ -111,6 +145,7 @@ class Accumulator {
     ACCUM_TYPE getADCmin() { return m_dADCmin; }
     
     ACCUM_TYPE getADCmax() { return m_dADCmax; }
+
     
     ACCUM_TYPE getChannelFactor() { return m_dChannelFactor; }
 
@@ -178,6 +213,10 @@ class Accumulator {
         m_pSpectrum[i] *= dValue;
       }
     }
+
+    void setADCmin(double dMin) {m_dADCmin = dMin;}
+
+    void setADCmax(double dMax) {m_dADCmax = dMax;}
 
     void setStartTime() { m_startTime.setNow(); }
     

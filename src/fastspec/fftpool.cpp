@@ -29,7 +29,7 @@ FFTPool::FFTPool(unsigned int uNumThreads, unsigned int uNumBuffers,
   for (i=0; i<(2*m_uNumFFT); i++) {
     m_pWindowHolder[i]=1;
   }
-  m_uNumWindows = 1;
+  m_uNumTaps = 1;
   for (i=0; i<4; i++) {
     m_pWindow[i] = m_pWindowHolder;
   }
@@ -160,7 +160,7 @@ bool FFTPool::setWindowFunction(FFT_REAL_TYPE* pWindow, unsigned int uLength,
     m_pWindowHolder[i+m_uNumFFT] = pWindow[i];
   }
 
-  m_uNumWindows = uNumTaps;
+  m_uNumTaps = uNumTaps;
   m_pWindow[0] = m_pWindowHolder;
 
   switch (uNumTaps) 
@@ -385,7 +385,7 @@ void FFTPool::process( FFT_REAL_TYPE* pIn, FFT_REAL_TYPE* pLocal1,
   FFTData sData;
 
   // For each application of the window function
-  for (unsigned int w=0; w<m_uNumWindows; w++) {
+  for (unsigned int w=0; w<m_uNumTaps; w++) {
 
     for (i=0; i<m_uNumFFT; i++) {
       pLocal1[i] = pIn[i] * m_pWindow[w][i];

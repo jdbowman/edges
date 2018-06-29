@@ -37,6 +37,7 @@ class Spectrometer {
     double          m_dChannelFactor;    
     double          m_dStartFreq;               // MHz
     double          m_dStopFreq;                // MHz
+    bool            m_bWriteTaps;              
     bool            m_bLocalStop;
     bool*           m_pbGlobalStop;
     unsigned long   m_uDrops;
@@ -53,7 +54,7 @@ class Spectrometer {
   public:
 
     // Constructor and destructor
-    Spectrometer( unsigned long, unsigned long, double, 
+    Spectrometer( unsigned long, unsigned long, double, bool, 
                   Digitizer*, FFTPool*, Switch*, bool* );
     ~Spectrometer();
 

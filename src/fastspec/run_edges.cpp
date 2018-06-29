@@ -109,13 +109,14 @@ void print_config( const string& sConfigFile, const string& sSite,
   printf("| Spectrometer - Digitizer - Input channel: %d\n", uInputChannel);
   printf("| Spectrometer - Digitizer - Voltage range mode: %d\n", uVoltageRange);
   printf("| Spectrometer - Digitizer - Number of channels: %d\n", uNumChannels);
-  printf("| Spectrometer - Digitizer - Samples per transfer: %d\n", uSamplesPerTransfer);
   printf("| Spectrometer - Digitizer - Acquisition rate: %6.2f\n", dAcquisitionRate);
+  printf("| Spectrometer - Digitizer - Samples per transfer: %d\n", uSamplesPerTransfer);
   printf("| Spectrometer - Digitizer - Samples per accumulation: %lu\n", uSamplesPerAccum);
   printf("| Spectrometer - Switch - Receiver switch IO port: 0x%x\n", uIOport); 
   printf("| Spectrometer - FFTPool - Number of FFT threads: %d\n", uNumThreads);
   printf("| Spectrometer - FFTPool - Number of FFT buffers: %d\n", uNumBuffers);
   printf("| Spectrometer - FFTPool - Number of window function taps: %d\n", uNumTaps);
+  printf("| Spectrometer - General - Write taps to separate files: %s\n", bWriteTaps ? "true" : "false");
   printf("| \n");  
   printf("| Bandwidth: %6.2f\n", dBandwidth);        
   printf("| Samples per FFT: %d\n", uNumFFT);    
@@ -188,6 +189,8 @@ int main(int argc, char* argv[])
     unsigned int uNumThreads = reader.GetInteger("Spectrometer", "num_fft_threads", 4);
     unsigned int uNumBuffers = reader.GetInteger("Spectrometer", "num_fft_buffers", 1000);
     unsigned int uNumTaps = reader.GetInteger("Spectrometer", "num_taps", 1);
+    bool bWriteTaps = reader.GetBoolean("Spectrometer", "write_taps_to_separate_files", 0);
+
 
     // Calculate a few derived configuration parameters
     double dBandwidth = dAcquisitionRate / 2.0;
@@ -270,6 +273,7 @@ int main(int argc, char* argv[])
     Spectrometer spec( uNumChannels, 
                        uSamplesPerAccum, 
                        dBandwidth, 
+                       bWriteTaps,
                        (Digitizer*) &px,
                        &fft,
                        &sw, 

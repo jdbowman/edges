@@ -81,6 +81,22 @@ class TimeKeeper {
     
     ~TimeKeeper() { }
 
+    // Operator functions
+    friend bool operator==(const TimeKeeper& lhs, const TimeKeeper& rhs)
+    {
+       return (lhs.m_dSecondsSince1970 == rhs.m_dSecondsSince1970);
+    }
+
+    friend bool operator<(const TimeKeeper& lhs, const TimeKeeper& rhs)
+    {
+       return (lhs.m_dSecondsSince1970 < rhs.m_dSecondsSince1970);
+    }
+    
+    friend bool operator> (const TimeKeeper& lhs, const TimeKeeper& rhs) { return (rhs < lhs); }
+    friend bool operator<=(const TimeKeeper& lhs, const TimeKeeper& rhs) { return !(lhs > rhs); }
+    friend bool operator>=(const TimeKeeper& lhs, const TimeKeeper& rhs) { return !(lhs < rhs); }
+    friend bool operator!=(const TimeKeeper& lhs, const TimeKeeper& rhs) { return !(lhs == rhs); }
+
 
     // Public functions
     double set(double dSecondsSince1970) { 
@@ -212,6 +228,33 @@ class TimeKeeper {
       return std::string(txt);
     }
 
+    std::string getDateTimeString(int uLevel)
+    {
+      std::string sDateString;
+      char txt[32];
+
+      switch (uLevel) 
+      {
+      case 1:
+        sprintf(txt, "%04d", m_iYear);
+        break;
+      case 2:
+        sprintf(txt, "%04d-%03d", m_iYear, m_iDayOfYear);
+        break;
+      case 3:
+        sprintf(txt, "%04d-%03d %02d", m_iYear, m_iDayOfYear, m_iHour);
+        break;
+      case 4:
+        sprintf(txt, "%04d-%03d %02d:%02d", m_iYear, m_iDayOfYear, m_iHour, 
+                m_iMinutes);
+        break;
+      default:
+        sprintf(txt, "%04d-%03d %02d:%02d:%02d", m_iYear, m_iDayOfYear, m_iHour, 
+                m_iMinutes, m_iSeconds);
+      }
+      
+      return std::string(txt);
+    }
 };
 
 

@@ -57,7 +57,7 @@ class FFTPool {
     queue<FFT_REAL_TYPE*>   m_full;
     FFT_REAL_TYPE*          m_pWindowHolder;
     FFT_REAL_TYPE*          m_pWindow[4];
-    unsigned int            m_uNumWindows;
+    unsigned int            m_uNumTaps;
     unsigned int            m_uNumThreads;
     unsigned int            m_uNumBuffers;
     unsigned int            m_uNumChannels;
@@ -78,7 +78,7 @@ class FFTPool {
     FFTPool(unsigned int, unsigned int, unsigned int);
     ~FFTPool();
 
-    unsigned int    getNumWindows() { return m_uNumWindows; } 
+    unsigned int    getNumTaps() { return m_uNumTaps; } 
     bool            empty();
     bool            push(unsigned short*, unsigned int);
     void            setCallback(fftpool_callback_fptr);
