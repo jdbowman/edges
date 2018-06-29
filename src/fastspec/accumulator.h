@@ -114,16 +114,16 @@ class Accumulator {
         m_startTime.set(pAccum->m_startTime.secondsSince1970());
       }
 
-      if (pAccum->m_stoptTime > m_stopTime) {
+      if (pAccum->m_stopTime > m_stopTime) {
         m_stopTime.set(pAccum->m_stopTime.secondsSince1970());
       } 
 
       // Take the outer bounds of the ADC min/max records
-      m_dADCmin = (pAccum->dADCmin < m_dADCmin) ? pAccum->dADCmin : m_dADCmin;
-      m_dADCmax = (pAccum->dADCmax > m_dADCmax) ? pAccum->dADCmax : m_dADCmax;
+      m_dADCmin = (pAccum->getADCmin() < m_dADCmin) ? pAccum->getADCmin() : m_dADCmin;
+      m_dADCmax = (pAccum->getADCmax() > m_dADCmax) ? pAccum->getADCmax() : m_dADCmax;
 
       // Increment the block counter
-      m_uNumAccums += pAccum->m_numAccums;
+      m_uNumAccums += pAccum->m_uNumAccums;
 
       // Add the new spectrum to the accumulation 
       for (unsigned int n=0; n<m_uDataLength; n++) {
@@ -133,7 +133,7 @@ class Accumulator {
       return true;
     }
 
-    ACCUM_TYPE get(unsigned int iIndex) 
+    ACCUM_TYPE get(unsigned int iIndex) const
     { 
       if (m_pSpectrum) {
         return m_pSpectrum[iIndex]; 
@@ -142,14 +142,14 @@ class Accumulator {
       }
     }
 
-    ACCUM_TYPE getADCmin() { return m_dADCmin; }
+    ACCUM_TYPE getADCmin() const { return m_dADCmin; }
     
-    ACCUM_TYPE getADCmax() { return m_dADCmax; }
+    ACCUM_TYPE getADCmax() const { return m_dADCmax; }
 
     
-    ACCUM_TYPE getChannelFactor() { return m_dChannelFactor; }
+    ACCUM_TYPE getChannelFactor() const { return m_dChannelFactor; }
 
-    bool getCopyOfSum(ACCUM_TYPE* pOut, unsigned int uLength) 
+    bool getCopyOfSum(ACCUM_TYPE* pOut, unsigned int uLength) const
     { 
       if ((pOut == NULL) || (uLength != m_uDataLength)) {
         return false;
@@ -162,7 +162,7 @@ class Accumulator {
       return true;
     }
 
-    bool getCopyOfAverage(ACCUM_TYPE* pOut, unsigned int uLength) 
+    bool getCopyOfAverage(ACCUM_TYPE* pOut, unsigned int uLength) const
     { 
       double dNormalize = 0;
 
@@ -181,21 +181,21 @@ class Accumulator {
       return true;
     }
     
-    unsigned int getDataLength() { return m_uDataLength; }
+    unsigned int getDataLength() const { return m_uDataLength; }
 
-    unsigned int getNumAccums() { return m_uNumAccums; }
+    unsigned int getNumAccums() const { return m_uNumAccums; }
 
-    double getStartFreq() { return m_dStartFreq; }
+    double getStartFreq() const { return m_dStartFreq; }
     
-    double getStopFreq() { return m_dStopFreq; }
+    double getStopFreq() const { return m_dStopFreq; }
 
-    TimeKeeper getStartTime() { return m_startTime; }
+    TimeKeeper getStartTime() const { return m_startTime; }
     
-    TimeKeeper getStopTime() { return m_stopTime; }
+    TimeKeeper getStopTime() const { return m_stopTime; }
     
     ACCUM_TYPE* getSum() { return m_pSpectrum; }
 
-    ACCUM_TYPE getTemperature() { return m_dTemperature; }
+    ACCUM_TYPE getTemperature() const { return m_dTemperature; }
 
     void init(unsigned int uDataLength, double dStartFreq, double dStopFreq, 
               double dChannelFactor) 

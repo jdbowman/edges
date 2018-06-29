@@ -32,7 +32,7 @@ class Timer {
     ~Timer() {}
 
     // Public functions
-    double get() { return m_dInterval; }
+    double get() const { return m_dInterval; }
 
     void tic() { clock_gettime(CLOCK_MONOTONIC, &m_tic); } 
 
@@ -140,17 +140,17 @@ class TimeKeeper {
       return m_dSecondsSince1970;
     }
 
-    int year() { return m_iYear;}
+    int year() const { return m_iYear;}
     
-    int doy() { return m_iDayOfYear;}
+    int doy() const { return m_iDayOfYear;}
     
-    int hh() { return m_iHour;}
+    int hh() const { return m_iHour;}
 
-    int mm() { return m_iMinutes;}
+    int mm() const { return m_iMinutes;}
 
-    int ss() { return m_iSeconds;}
+    int ss() const { return m_iSeconds;}
 
-    double secondsSince1970() { return m_dSecondsSince1970; }
+    double secondsSince1970() const { return m_dSecondsSince1970; }
 
     static void getDateTimeFromSecondsSince1970(double secs, 
                                                 int *pyear, int *pday, 
@@ -200,7 +200,7 @@ class TimeKeeper {
       return (day);
     }
 
-    std::string getFileString(int uLevel)
+    std::string getFileString(int uLevel) const
     {
       std::string sDateString;
       char txt[32];
@@ -228,7 +228,7 @@ class TimeKeeper {
       return std::string(txt);
     }
 
-    std::string getDateTimeString(int uLevel)
+    std::string getDateTimeString(int uLevel) const
     {
       std::string sDateString;
       char txt[32];

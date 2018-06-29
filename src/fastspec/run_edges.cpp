@@ -93,7 +93,8 @@ void print_config( const string& sConfigFile, const string& sSite,
                    unsigned int uNumChannels, unsigned int uSamplesPerTransfer,
                    unsigned long uSamplesPerAccum, unsigned int uIOport,
                    unsigned int uNumFFT, unsigned int uNumThreads, 
-                   unsigned int uNumBuffers, unsigned int uNumTaps)
+                   unsigned int uNumBuffers, unsigned int uNumTaps, 
+                   bool bWriteTaps )
 {
   printf("\n");
   printf("| ------------------------------------------------------------------------\n");
@@ -205,7 +206,7 @@ int main(int argc, char* argv[])
     print_config( sConfigFile, sSite, sInstrument, sOutput, dAcquisitionRate, 
                   dBandwidth, uInputChannel, uVoltageRange, uNumChannels, 
                   uSamplesPerTransfer, uSamplesPerAccum, uIOport, uNumFFT, 
-                  uNumThreads, uNumBuffers, uNumTaps );
+                  uNumThreads, uNumBuffers, uNumTaps, bWriteTaps );
 
     // -----------------------------------------------------------------------
     // Check the configuration

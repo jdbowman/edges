@@ -227,12 +227,13 @@ void Spectrometer::run()
     } else {
 
       // Co-add spectra from all taps
-      if (m_pFFT->getNumWindwows() > 1)
+      if (m_pFFT->getNumTaps() > 1)
       {
         for (unsigned int w=1; w<m_pFFT->getNumTaps(); w++) {
-          m_accumAntenna[0].combine(m_accumAntenna[w]);
-          m_accumAmbientLoad[0].combine(m_accumAmbientLoad[w]);
-          m_accumHotLoad[0].combine(m_accumHotLoad[w]);
+          m_accumAntenna[0].combine(&m_accumAntenna[w]);
+          m_accumAmbientLoad[0].combine(&m_accumAmbientLoad[w]);
+          m_accumHotLoad[0].combine(&m_accumHotLoad[w]);
+        }
       }
 
       // Write to single file
@@ -251,9 +252,9 @@ void Spectrometer::run()
     printf("Spectrometer: Write time  = %6.3f seconds\n", writeTimer.get());
     printf("Spectrometer: Duty cycle  = %6.3f\n", dDutyCycle_Overall);
     printf("Spectrometer: Drop fraction = %6.3f\n", 1.0 * m_uDrops / (m_uNumSamplesPerAccumulation + m_uDrops));
-    printf("Spectrometer: p0 (antenna) -- acdmin = %6.3f,  adcmax = %6.3f\n", i, m_accumAntenna[0].getADCmin(), m_accumAntenna[0].getADCmax());
-    printf("Spectrometer: p1 (ambient) -- acdmin = %6.3f,  adcmax = %6.3f\n", i, m_accumAmbientLoad[0].getADCmin(), m_accumAmbientLoad[0].getADCmax());
-    printf("Spectrometer: p2 (hot)     -- acdmin = %6.3f,  adcmax = %6.3f\n", i, m_accumHotLoad[0].getADCmin(), m_accumHotLoad[0].getADCmax());
+    printf("Spectrometer: p0 (antenna) -- acdmin = %6.3f,  adcmax = %6.3f\n", m_accumAntenna[0].getADCmin(), m_accumAntenna[0].getADCmax());
+    printf("Spectrometer: p1 (ambient) -- acdmin = %6.3f,  adcmax = %6.3f\n", m_accumAmbientLoad[0].getADCmin(), m_accumAmbientLoad[0].getADCmax());
+    printf("Spectrometer: p2 (hot)     -- acdmin = %6.3f,  adcmax = %6.3f\n", m_accumHotLoad[0].getADCmin(), m_accumHotLoad[0].getADCmax());
     
     printf("\n");
   }
