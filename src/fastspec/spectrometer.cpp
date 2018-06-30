@@ -2,8 +2,9 @@
 #include "spectrometer.h"
 #include "timing.h"
 #include "utility.h"
+#include <unistd.h> // usleep
 
-
+#define SWITCH_SLEEP_MICROSECONDS 500000
 
 // ----------------------------------------------------------------------------
 // Constructor
@@ -11,6 +12,7 @@
 Spectrometer::Spectrometer(unsigned long uNumChannels, 
                            unsigned long uNumSamplesPerAccumulation, 
                            double dBandwidth,
+                           double dSwitchDelayTime,
                            bool bWriteTaps,
                            Digitizer* pDigitizer,
                            FFTPool* pFFT,
@@ -23,6 +25,7 @@ Spectrometer::Spectrometer(unsigned long uNumChannels,
   // User specified configuration
   m_uNumChannels = uNumChannels;
   m_uNumSamplesPerAccumulation = uNumSamplesPerAccumulation;
+  m_dSwitchDelayTime = dSwitchDelayTime;
   m_dBandwidth = dBandwidth;
   m_bWriteTaps = bWriteTaps;
 
@@ -142,7 +145,6 @@ void Spectrometer::run()
   Timer writeTimer;
   TimeKeeper tk;
   double dDutyCycle_Overall;
-  double dDutyCycle_FFT;
 
   if ((m_pDigitizer == NULL) || (m_pSwitch == NULL)) {
     printf("Spectrometer: No digitizer or switch object at start of run.  End.");
@@ -162,6 +164,7 @@ void Spectrometer::run()
 
       // Change receiver switch state and pause briefly for it to take effect
       m_pSwitch->set(i);
+      usleep((unsigned int) (m_dSwitchDelayTime * 1e6)); 
 
       // Wait for previous FFTs to finish
       m_pFFT->waitForEmpty();
@@ -246,17 +249,16 @@ void Spectrometer::run()
     // Calculate overall duty cycle
     dutyCycleTimer.toc();
     dDutyCycle_Overall = 3.0 * m_uNumSamplesPerAccumulation / (2.0 * 1e6 * m_dBandwidth) / dutyCycleTimer.get();
-    dDutyCycle_FFT = 1.0 * m_uNumSamplesPerAccumulation / (m_uNumSamplesPerAccumulation + m_uDrops); 
 
+    printf("\n");
     printf("Spectrometer: Cycle time  = %6.3f seconds\n", dutyCycleTimer.get());
-    printf("Spectrometer: Switch time = %6.3f seconds\n", 3*SWITCH_SLEEP_MICROSECONDS/1e6);
+    printf("Spectrometer: Switch time = %6.3f seconds\n", 3*m_dSwitchDelayTime);
     printf("Spectrometer: Write time  = %6.3f seconds\n", writeTimer.get());
     printf("Spectrometer: Duty cycle  = %6.3f\n", dDutyCycle_Overall);
     printf("Spectrometer: Drop fraction = %6.3f\n", 1.0 * m_uDrops / (m_uNumSamplesPerAccumulation + m_uDrops));
     printf("Spectrometer: p0 (antenna) -- acdmin = %6.3f,  adcmax = %6.3f\n", m_accumAntenna[0].getADCmin(), m_accumAntenna[0].getADCmax());
     printf("Spectrometer: p1 (ambient) -- acdmin = %6.3f,  adcmax = %6.3f\n", m_accumAmbientLoad[0].getADCmin(), m_accumAmbientLoad[0].getADCmax());
     printf("Spectrometer: p2 (hot)     -- acdmin = %6.3f,  adcmax = %6.3f\n", m_accumHotLoad[0].getADCmin(), m_accumHotLoad[0].getADCmax());
-    
     printf("\n");
   }
 

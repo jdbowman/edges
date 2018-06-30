@@ -398,6 +398,41 @@ string INIReader::MakeKey(const string& section, const string& name)
     return key;
 }
 
+void INIReader::PrintSection(const string& section)
+{
+    string search = section + "=";
+    size_t len = search.length();
+
+    for(std::map<std::string, std::string>::iterator iter = _values.begin(); 
+        iter != _values.end(); iter++) {
+
+        string key = iter->first();
+        size_t pos = key.find(section + "=");
+
+        if (pos==0) {
+            string name = key.substr(len);
+            string value = iter->second();
+
+            printf("INI: [%s] %s = %s\n", section.c_str(), name.c_str(), value.c_str());
+        }
+    }
+}
+void INIReader::Print()
+{
+    for(std::map<std::string, std::string>::iterator iter = _values.begin(); 
+        iter != _values.end(); iter++) {
+
+        string key = iter->first();
+        size_t pos = key.find("=");
+
+        string section = key.substr(0,pos+1);
+        string name = key.substr(pos+1);
+        string value = iter->second();
+
+        printf("INI: [%s] %s = %s\n", section.c_str(), name.c_str(), value.c_str());
+    }
+}
+
 int INIReader::ValueHandler(void* user, const char* section, const char* name,
                             const char* value)
 {

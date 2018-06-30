@@ -3,11 +3,10 @@
 
 #include <stdio.h>
 #include <sys/io.h> // ioperm, etc.
-#include <unistd.h> // usleep
+
 
 using namespace std;
 
-#define SWITCH_SLEEP_MICROSECONDS 500000
 
 class Switch {
 
@@ -61,15 +60,8 @@ class ParallelPortSwitch : public Switch {
       if (uSwitchState == 1) iWriteValue = 2;  // load
       if (uSwitchState == 2) iWriteValue = 3;  // load + cal
 
-//printf("switch: read IO before outb = %d\n", inb(m_uIOport));
-
       // Send the switch state to the parallel port
-      outb(iWriteValue, m_uIOport); 
-
-//printf("switch: read IO after outb = %d\n", inb(m_uIOport));
-
-      // Wait briefly (~0.1 sec) for it take effect
-      usleep(SWITCH_SLEEP_MICROSECONDS); 
+      outb(iWriteValue, m_uIOport);  
 
       // Remember the switch state
       m_uSwitchState = uSwitchState;
@@ -105,7 +97,6 @@ class SimulatedSwitch : public Switch {
 
     unsigned int set(unsigned int uSwitchState) {
       m_uSwitchState = uSwitchState;
-      usleep(SWITCH_SLEEP_MICROSECONDS); 
       return uSwitchState;
     }
 

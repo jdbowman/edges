@@ -91,10 +91,10 @@ void print_config( const string& sConfigFile, const string& sSite,
                    double dAcquisitionRate, double dBandwidth,
                    unsigned int uInputChannel, unsigned int uVoltageRange,
                    unsigned int uNumChannels, unsigned int uSamplesPerTransfer,
-                   unsigned long uSamplesPerAccum, unsigned int uIOport,
-                   unsigned int uNumFFT, unsigned int uNumThreads, 
-                   unsigned int uNumBuffers, unsigned int uNumTaps, 
-                   bool bWriteTaps )
+                   unsigned long uSamplesPerAccum, unsigned int uSwitchIOport,
+                   double dSwitchDelay, unsigned int uNumFFT, 
+                   unsigned int uNumThreads, unsigned int uNumBuffers, 
+                   unsigned int uNumTaps, bool bWriteTaps )
 {
   printf("\n");
   printf("| ------------------------------------------------------------------------\n");
@@ -113,7 +113,8 @@ void print_config( const string& sConfigFile, const string& sSite,
   printf("| Spectrometer - Digitizer - Acquisition rate: %6.2f\n", dAcquisitionRate);
   printf("| Spectrometer - Digitizer - Samples per transfer: %d\n", uSamplesPerTransfer);
   printf("| Spectrometer - Digitizer - Samples per accumulation: %lu\n", uSamplesPerAccum);
-  printf("| Spectrometer - Switch - Receiver switch IO port: 0x%x\n", uIOport); 
+  printf("| Spectrometer - Switch - Receiver switch IO port: 0x%x\n", uSwitchIOport); 
+  printf("| Spectrometer - Switch - Receiver switch delay (seconds): %d\n", dSwitchDelay); 
   printf("| Spectrometer - FFTPool - Number of FFT threads: %d\n", uNumThreads);
   printf("| Spectrometer - FFTPool - Number of FFT buffers: %d\n", uNumBuffers);
   printf("| Spectrometer - FFTPool - Number of window function taps: %d\n", uNumTaps);
@@ -180,15 +181,16 @@ int main(int argc, char* argv[])
     string sDataDir = reader.Get("Installation", "datadir", "");
     string sSite = reader.Get("Installation", "site", "");
     string sInstrument = reader.Get("Installation", "instrument", "");
-    unsigned int uIOport = reader.GetInteger("Spectrometer", "io_port", 0x3010);
+    unsigned int uSwitchIOPort = reader.GetInteger("Spectrometer", "switch_io_port", 0x3010);
+    double uSwitchDelay = reader.GetReal("Spectrometer", "switch_delay", 0.5);
     unsigned int uInputChannel = reader.GetInteger("Spectrometer", "input_channel", 2);
     unsigned int uNumChannels = reader.GetInteger("Spectrometer", "num_channels", 65536);
-    unsigned long uSamplesPerAccum = reader.GetInteger("Spectrometer", "samples_per_accumulation", 200*2*1024*1024);
+    unsigned long uSamplesPerAccum = reader.GetInteger("Spectrometer", "samples_per_accumulation", 1024*2*1024*1024);
     unsigned int uSamplesPerTransfer = reader.GetInteger("Spectrometer", "samples_per_transfer", 2*1024*1024);
     unsigned int uVoltageRange = reader.GetInteger("Spectrometer", "voltage_range", 0);
     double dAcquisitionRate = reader.GetReal("Spectrometer", "acquisition_rate", 400);
     unsigned int uNumThreads = reader.GetInteger("Spectrometer", "num_fft_threads", 4);
-    unsigned int uNumBuffers = reader.GetInteger("Spectrometer", "num_fft_buffers", 1000);
+    unsigned int uNumBuffers = reader.GetInteger("Spectrometer", "num_fft_buffers", 400);
     unsigned int uNumTaps = reader.GetInteger("Spectrometer", "num_taps", 1);
     bool bWriteTaps = reader.GetBoolean("Spectrometer", "write_taps_to_separate_files", 0);
 
@@ -205,9 +207,13 @@ int main(int argc, char* argv[])
     // ----------------------------------------------------------------------- 
     print_config( sConfigFile, sSite, sInstrument, sOutput, dAcquisitionRate, 
                   dBandwidth, uInputChannel, uVoltageRange, uNumChannels, 
-                  uSamplesPerTransfer, uSamplesPerAccum, uIOport, uNumFFT, 
-                  uNumThreads, uNumBuffers, uNumTaps, bWriteTaps );
+                  uSamplesPerTransfer, uSamplesPerAccum, uSwitchIOport, 
+                  dSwitchDelay, uNumFFT, uNumThreads, uNumBuffers, uNumTaps, 
+                  bWriteTaps );
 
+    reader.Print();
+    reader.Print("Sepctrometer");
+    
     // -----------------------------------------------------------------------
     // Check the configuration
     // -----------------------------------------------------------------------  
@@ -274,6 +280,7 @@ int main(int argc, char* argv[])
     Spectrometer spec( uNumChannels, 
                        uSamplesPerAccum, 
                        dBandwidth, 
+                       dSwitchDelay,
                        bWriteTaps,
                        (Digitizer*) &px,
                        &fft,
