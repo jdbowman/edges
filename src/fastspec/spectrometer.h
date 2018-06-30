@@ -31,7 +31,7 @@ class Spectrometer {
     unsigned long   m_uNumFFT;
     unsigned long   m_uNumChannels;
     unsigned long   m_uNumSamplesPerAccumulation;
-    double          m_dSwitchDelayTime          // seconds
+    double          m_dSwitchDelayTime;         // seconds
     double          m_dAccumulationTime;        // seconds
     double          m_dBandwidth;               // MHz
     double          m_dChannelSize;             // MHz

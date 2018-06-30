@@ -114,7 +114,7 @@ void print_config( const string& sConfigFile, const string& sSite,
   printf("| Spectrometer - Digitizer - Samples per transfer: %d\n", uSamplesPerTransfer);
   printf("| Spectrometer - Digitizer - Samples per accumulation: %lu\n", uSamplesPerAccum);
   printf("| Spectrometer - Switch - Receiver switch IO port: 0x%x\n", uSwitchIOport); 
-  printf("| Spectrometer - Switch - Receiver switch delay (seconds): %d\n", dSwitchDelay); 
+  printf("| Spectrometer - Switch - Receiver switch delay (seconds): %8.6f\n", dSwitchDelay); 
   printf("| Spectrometer - FFTPool - Number of FFT threads: %d\n", uNumThreads);
   printf("| Spectrometer - FFTPool - Number of FFT buffers: %d\n", uNumBuffers);
   printf("| Spectrometer - FFTPool - Number of window function taps: %d\n", uNumTaps);
@@ -182,10 +182,10 @@ int main(int argc, char* argv[])
     string sSite = reader.Get("Installation", "site", "");
     string sInstrument = reader.Get("Installation", "instrument", "");
     unsigned int uSwitchIOPort = reader.GetInteger("Spectrometer", "switch_io_port", 0x3010);
-    double uSwitchDelay = reader.GetReal("Spectrometer", "switch_delay", 0.5);
+    double dSwitchDelay = reader.GetReal("Spectrometer", "switch_delay", 0.5);
     unsigned int uInputChannel = reader.GetInteger("Spectrometer", "input_channel", 2);
     unsigned int uNumChannels = reader.GetInteger("Spectrometer", "num_channels", 65536);
-    unsigned long uSamplesPerAccum = reader.GetInteger("Spectrometer", "samples_per_accumulation", 1024*2*1024*1024);
+    unsigned long uSamplesPerAccum = reader.GetInteger("Spectrometer", "samples_per_accumulation", 1024L*2L*1024L*1024L);
     unsigned int uSamplesPerTransfer = reader.GetInteger("Spectrometer", "samples_per_transfer", 2*1024*1024);
     unsigned int uVoltageRange = reader.GetInteger("Spectrometer", "voltage_range", 0);
     double dAcquisitionRate = reader.GetReal("Spectrometer", "acquisition_rate", 400);
@@ -205,14 +205,18 @@ int main(int argc, char* argv[])
     // -----------------------------------------------------------------------
     // Print the configuration to terminal
     // ----------------------------------------------------------------------- 
+    printf("INI File -- relevant settings\n\n");
+    reader.Print(string("installation"));
+    printf("\n");
+    reader.Print(string("spectrometer"));
+    printf("\n");
+
     print_config( sConfigFile, sSite, sInstrument, sOutput, dAcquisitionRate, 
                   dBandwidth, uInputChannel, uVoltageRange, uNumChannels, 
-                  uSamplesPerTransfer, uSamplesPerAccum, uSwitchIOport, 
+                  uSamplesPerTransfer, uSamplesPerAccum, uSwitchIOPort, 
                   dSwitchDelay, uNumFFT, uNumThreads, uNumBuffers, uNumTaps, 
                   bWriteTaps );
 
-    reader.Print();
-    reader.Print("Sepctrometer");
     
     // -----------------------------------------------------------------------
     // Check the configuration
@@ -238,7 +242,7 @@ int main(int argc, char* argv[])
     // Initialize the receiver switch
     // -----------------------------------------------------------------------   
     SWITCH sw; 
-    if (!sw.init(uIOport)) {
+    if (!sw.init(uSwitchIOPort)) {
       printf("Failed to control parallel port.  Abort.\n");
       return 1;
     }

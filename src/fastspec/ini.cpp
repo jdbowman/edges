@@ -398,38 +398,24 @@ string INIReader::MakeKey(const string& section, const string& name)
     return key;
 }
 
-void INIReader::PrintSection(const string& section)
+void INIReader::Print(const string& section) const
 {
-    string search = section + "=";
-    size_t len = search.length();
+    string search = section;
+    std::transform(search.begin(), search.end(), search.begin(), ::tolower);
 
-    for(std::map<std::string, std::string>::iterator iter = _values.begin(); 
+    for(std::map<std::string, std::string>::const_iterator iter = _values.begin(); 
         iter != _values.end(); iter++) {
 
-        string key = iter->first();
-        size_t pos = key.find(section + "=");
-
-        if (pos==0) {
-            string name = key.substr(len);
-            string value = iter->second();
-
-            printf("INI: [%s] %s = %s\n", section.c_str(), name.c_str(), value.c_str());
-        }
-    }
-}
-void INIReader::Print()
-{
-    for(std::map<std::string, std::string>::iterator iter = _values.begin(); 
-        iter != _values.end(); iter++) {
-
-        string key = iter->first();
+        string key = iter->first;
         size_t pos = key.find("=");
 
-        string section = key.substr(0,pos+1);
-        string name = key.substr(pos+1);
-        string value = iter->second();
+        string key_section = key.substr(0,pos);
+        string key_name = key.substr(pos+1);
+        string value = iter->second;
 
-        printf("INI: [%s] %s = %s\n", section.c_str(), name.c_str(), value.c_str());
+        if (search == string("*") || search == key_section) {
+            printf("INI: [%s] %s = %s\n", key_section.c_str(), key_name.c_str(), value.c_str());
+        }
     }
 }
 

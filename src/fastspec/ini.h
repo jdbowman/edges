@@ -42,9 +42,9 @@ public:
     // and valid false values are "false", "no", "off", "0" (not case sensitive).
     bool GetBoolean(const std::string& section, const std::string& name, bool default_value) const;
 
-    void Print() const;
-
-    void PrintSection(const std::string& section) const;
+    //  Prints the key:value pairs to stdout.   Prints entire map if section is "*", 
+    //  otherwise only prints key:value pairs in the specified section.
+    void Print(const std::string& section) const;
     
 private:
     int _error;
