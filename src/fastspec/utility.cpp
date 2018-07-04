@@ -179,6 +179,7 @@ bool append_to_acq(const char* pchFilename, const ACCUM_TYPE* pSpectrum,
   char b64[64];
 
   double dStepFreq = (dStopFreq - dStartFreq) / (double) uLength;
+  //printf("ACQ: numAccums: %d, uLength: %d, val: %6.3f\n", uNumAccums, uLength, pSpectrum[12000]);
 
   // Define the encoding lookup table
   for (i = 0; i < 26; i++) {
@@ -223,10 +224,10 @@ double dOut = 0;
     if (i<10) {
       dOut = -199;
     } else {
-      dOut = 10.0 * log10( pSpectrum[i] / (uNumAccums*uLength*2.0) ) - 38.3;
+      dOut = 10.0 * log10( pSpectrum[i] / ((double)uNumAccums*(double)uLength*(double)2.0) ) - 38.3;
     }
 
-    //if (i==20000) { printf("%8.6f\n", dOut); }
+    //if (i==12000) { printf("%8.6f\n", dOut); }
 
     k = -(int)(dOut * 1e05);
     if (k > 16700000) {
