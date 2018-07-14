@@ -1,10 +1,12 @@
-import models
 import numpy as np
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 import csv
 import os
 import errno
+import sys
+sys.path.append('..');
+import models
 
 # --------------------------------------------------------------------------- #
 # Parallel processing unit job
@@ -40,15 +42,18 @@ def processJob(x, data, dataCov, foregroundComponents, signalFunction, signalTri
 def main():
 
   # Define the parameters for the run
-  outputBase = 'G:/My Drive/EDGES/mcmc/run2';
-  dataFile = 'G:/My Drive/Publications/Papers/2017_EDGES_Low/PublicData/figure1_plotdata.csv';
-  njobs = 3;
+  
+#  outputBase = 'G:/My Drive/EDGES/mcmc/run2';
+#  dataFile = 'G:/My Drive/Publications/Papers/2017_EDGES_Low/PublicData/figure1_plotdata.csv';
+
+  outputBase = '/home/loco/analysis/run3';
+  dataFile = '/home/loco/analysis/figure1_plotdata.csv';
+  njobs = 12;
   vc = 75;
   beta = -2.5;
   nterms = 5;
     
   # Load public EDGS data from Bowman et al. 2018 Figure 1
-  # G:\My Drive\Publications\Papers\2017_EDGES_Low\PublicData    
   data = np.genfromtxt(dataFile, delimiter=',', skip_header=1);
   f = data[:,0];
   w = data[:,1];

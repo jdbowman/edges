@@ -5,6 +5,7 @@ Desc: Collection of models for simulating EDGES data and analysis
 
 import numpy as np
 import time
+import csv
 
 # --------------------------------------------------------------------------- #
 # Signal and instrumental models
@@ -37,7 +38,7 @@ def linearPolynomialComponents(v, vc, nterms, beta=-2.5):
   return out; 
     
 def linearPolynomial(v, vc, terms, beta=-2.5):
-  components = linearPolynomialComponents(v, vc, beta, terms.size);
+  components = linearPolynomialComponents(v, vc, terms.size, beta);
   return components.dot(terms);
     
 
@@ -71,7 +72,7 @@ def linearLogExpansionComponents(v, vc, nterms, beta=-2.5):
   return out;
 
 def linearLogExpansion(v, vc, terms, beta=-2.5):
-  components = linearLogExpansionComponents(v, vc, beta, terms.size);
+  components = linearLogExpansionComponents(v, vc, terms.size, beta);
   return components.dot(terms);
 
 
@@ -181,18 +182,45 @@ def logUniformPriors(theta, priors):
   return 0;
 
 # foregroundComponents (ndata, nforegroundparams), signalTrials (nsignalparams, ntrials)
-def searchTrials(data, dataCov, foregroundComponents, x, signalFunction, signalTrials):
-  foregroundFit = np.zeros([foregroundComponents.shape[1], signalTrials.shape[1]]);
-  rms = np.zeros(signalTrials.shape[1]);
-  
-  ntrials = signalTrials.shape[1];
-  for i in range(ntrials):
-    signal = signalFunction(x, signalTrials[:,i]);
-    foregroundFit[:,i], cov = fitLinearCov(data-signal, dataCov, foregroundComponents);
-    rms[i] = np.std(data - signal - foregroundComponents.dot(foregroundFit[:,i]));
-    
+def searchSignalTrials(data, foregroundComponents, x, signalFunction, signalTrials, dataCov=None):
+
+  ntrials = signalTrials.shape[1];  
+  foregroundFit = np.zeros([foregroundComponents.shape[1], ntrials]);
+  rms = np.zeros(ntrials); 
+
+  if dataCov is None:
+     for i in range(ntrials):
+      signal = signalFunction(x, signalTrials[:,i]);
+      foregroundFit[:,i], rms[i] = fitLinear(data - signal, foregroundComponents); 
+  else:  
+    for i in range(ntrials):
+      signal = signalFunction(x, signalTrials[:,i]);
+      foregroundFit[:,i], cov = fitLinearCov(data - signal, dataCov, foregroundComponents);
+      rms[i] = np.std(data - signal - foregroundComponents.dot(foregroundFit[:,i]));
+      
+
+        
   return foregroundFit, rms;
   
+  
+# foregroundComponents (ndata, nforegroundparams), signalRealizations(ndata, nrealizations)
+def searchSignalRealizations(data, foregroundComponents, x, signalRealizations, dataCov=None):
+  
+  ntrials = signalRealizations.shape[1];
+  foregroundFit = np.zeros([foregroundComponents.shape[1], ntrials]);
+  rms = np.zeros(ntrials);
+  
+  if dataCov is None:
+    for i in range(ntrials):
+      foregroundFit[:,i], rms[i] = fitLinear(data - signalRealizations[:,i], foregroundComponents);      
+  else: 
+    for i in range(ntrials):
+      foregroundFit[:,i], cov = fitLinearCov(data - signalRealizations[:,i], dataCov, foregroundComponents);
+      rms[i] = np.std(data - signalRealizations[:,i] - foregroundComponents.dot(foregroundFit[:,i]));
+      
+  return foregroundFit, rms;
+  
+    
   
 # steps is a Python list of lists.  Each sublist contains the values to use
 # for the corresponding parameter in the model.
@@ -255,7 +283,6 @@ def optExponentLogExpansion_FlattenedGaussian(theta, x, y, yerr, vc):
     flattenedGaussian(x, theta[-4:]) );
   
 def optLinearPolynomial_FlattenedGaussian(theta, x, y, yerr, vc, beta=-2.5):
-  print(theta)
   return -logLike(y, yerr, 
     linearPolynomial(x, vc, theta[:-4], beta) + 
     flattenedGaussian(x, theta[-4], theta[-3], theta[-2], theta[-1]) );  
@@ -292,7 +319,7 @@ def probLinearPolynomial_FlattenedGaussian(theta, x, y, yerr, vc, beta, priors=N
     lp = logUniformPriors(theta, priors);
     if not np.isfinite(lp):
       return -np.Inf;
-  return lp + logLike(y, yerr, linearPolynomial(x, vc, beta, theta[:-4]) +
+  return lp + logLike(y, yerr, linearPolynomial(x, vc, theta[:-4], beta) +
                       flattenedGaussian(x, theta[-4:])); 
 
 def probLinearPhysical(theta, x, y, yerr, vc, priors=None):
@@ -321,7 +348,7 @@ def probLinearLogExpansion(theta, x, y, yerr, vc, beta, priors=None):
     lp = logUniformPriors(theta, priors);
     if not np.isfinite(lp):
       return -np.Inf;
-  return lp + logLike(y, yerr, linearLogExpansion(x, vc, beta, theta));  
+  return lp + logLike(y, yerr, linearLogExpansion(x, vc, theta, beta));  
 
 def probLinearLogExpansion_FlattenedGaussian(theta, x, y, yerr, vc, beta, priors=None):
   if priors is None:
@@ -330,7 +357,7 @@ def probLinearLogExpansion_FlattenedGaussian(theta, x, y, yerr, vc, beta, priors
     lp = logUniformPriors(theta, priors);
     if not np.isfinite(lp):
       return -np.Inf;
-  return lp + logLike(y, yerr, linearLogExpansion(x, vc, beta, theta[:-4]) +
+  return lp + logLike(y, yerr, linearLogExpansion(x, vc, theta[:-4], beta) +
                       flattenedGaussian(x, theta[-4:])); 
 
 def probExponentLogExpansion(theta, x, y, yerr, vc, priors=None):
@@ -353,5 +380,61 @@ def probExponentLogExpansion_FlattenedGaussian(theta, x, y, yerr, vc, priors=Non
                       flattenedGaussian(x, theta[-4:])); 
           
 
+
+# --------------------------------------------------------------------------- #
+# File IO Helpers
+# --------------------------------------------------------------------------- #
+
+# Get the number of rows in a text/csv file
+def numRows(fname):
+  with open(fname, 'r') as f:
+    for i, l in enumerate(f):
+      pass
+  return i + 1;
+  
+  
+  
+def isFloat(str):
+  try:
+    float(str);
+    return True;
+  except ValueError:
+    return False;
+    
+    
+# Read a CSV file output by the simulation scripts
+def readFile(inputFile):
+
+  # Find out how many rows are in the file
+  nrows = numRows(inputFile);
+               
+  with open(inputFile, "r") as csvFile:
+  
+    csvReader = csv.reader(csvFile);
+    
+    for i, row in enumerate(csvReader):
+    
+      # The first row is a header row with labels for parameters and 
+      # frequencies bins
+      if i is 0:
+      
+        # The first columns are usually parameter values so find these
+        paramLabels = [s for s in row if not isFloat(s)];
+        nparams = len(paramLabels);
+        
+        # Then the frequencies for the spectra
+        freqs = np.array([float(j) for j in row[nparams:]]);
+        nfreqs = len(freqs);
+        
+        # Allocate output holders for the data
+        params = np.empty([nparams, nrows-1]);
+        spectra = np.empty([nfreqs, nrows-1]);
+        
+      # The rest of the file is the data
+      else:
+        params[:,i-1] = row[:nparams];
+        spectra[:,i-1] = row[nparams:];
+        
+  return spectra, freqs, params, paramLabels;
 
 
