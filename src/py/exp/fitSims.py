@@ -104,7 +104,7 @@ def main():
     fo_recovResiduals = set - foregroundComponents.dot(fo_recovParams);
     
     # Write results to file
-    filename = "{}_fits_{}_sig{}_noise{}.csv".format(inputFile[:-4], model, bIncludeSignal, bIncludeNoise);
+    filename = "{}_fits_{}_sig{}_noise{}_terms{}_beta{}.csv".format(inputFile[:-4], model, bIncludeSignal, bIncludeNoise, nterms, beta);
     with open(filename, "w") as csvFile:
       csvWriter = csv.writer(csvFile);
        
@@ -153,8 +153,8 @@ def main():
     gs_recovResiduals = np.zeros([nfreqs, set.shape[1]]); 
 
     # Write results to file on the fly
-    filename = "{}_gridsearch{}_{}_sig{}_noise{}_cov{}.csv".format(inputFile[:-4], 
-               params_sig.shape[1], model, bIncludeSignal, bIncludeNoise, bUseCov);
+    filename = "{}_gridsearch{}_{}_sig{}_noise{}_cov{}_terms{}_beta{}.csv".format(inputFile[:-4], 
+               params_sig.shape[1], model, bIncludeSignal, bIncludeNoise, bUseCov, nterms, beta);
                
     with open(filename, "w") as csvFile:
       csvWriter = csv.writer(csvFile);

@@ -87,7 +87,7 @@ def main():
 
   # Parse command line arguments
   parser = argparse.ArgumentParser(description='Fit simulated data.');
-  parser.add_argument('infiletemplate', help='Options for plotting contents of CSV file.');
+  parser.add_argument('infile', help='Options for plotting contents of CSV file.');
   parser.add_argument('-t', '--trials',   
                       action='store_true', 
                       help='Plot a parameter by trial number.');
@@ -97,12 +97,9 @@ def main():
   parser.add_argument('-i', '--hist', 
                       action='store_true', 
                       help='Plot histogram of parameter values.');
-  parser.add_argument('-d', '--dualhist',  
-                      action='store_true',
-                      help="Plot dual histogram of parameter values by frequency range.");
   parser.add_argument('-l', '--label', nargs=1,
                       help="Label to display on plot.");
-  parser.add_argument('-p', '--param', nargs=1, type=int,
+  parser.add_argument('-p', '--param', nargs=1, type=int, default=[0],
                       help="The paramater to plot.");  
   parser.add_argument('-b', '--bins', nargs=3, type=float, default=[-1,1,100],
                       help="Bins for the histogram.  A list of there values that will be given to numpy.linspace");    
@@ -120,101 +117,89 @@ def main():
   label = None if args.label is None else args.label[0];
   trueValue = None if args.value is None else args.value[0];
   bPlotHistogram = args.hist;
-  bPlotDualHistogram = args.dualhist;
   bPlotTrials = args.trials;
   bPlotSpectra = args.spec;
-  inputFileTemplate = args.infiletemplate;  #'foreground_mini_simulation_freq{}_gridsearch20500_{}_sigTrue_noise{}.csv';
+  inputFile = args.infile;  
   
-  print(bins)
-  #bins = np.linspace(-2.05,2.05,42);
-  #bins = np.linspace(-0.015,0.075,52);
+  if bPlotHistogram:
+    print(bins)
+       
+  # Read the file specified 
+  spec, freqs, params, labels = models.readFile(inputFile);
+
+  # Get basic statistics of each parmater
+  statsMedian = np.median(params, axis=1);
+  statsMean = np.mean(params, axis=1);
+  statsStd = np.std(params, axis=1);
   
-  modelSet = ['linpoly', 'linphys', 'linlog'];
-  freqSet = [0, 1];
-  noiseSet = [True, False];
-
-      
-  # Read the files specified in the sets and populate an array with
-  spec, params, freqs, filenames, exists = loadGroup(inputFileTemplate, modelSet, freqSet, noiseSet);
-
-
-  meds = np.median(params, axis=1);
-  print(meds)
+  print("");
+  print(inputFile)
+  print("");
+  print("Number of parameters: {}".format(params.shape[0]));
+  print("");
+  print("Medians: {}".format(", ".join(map("{:8.6f}".format, statsMedian))));
+  print("Means: {}".format(", ".join(map("{:8.6f}".format, statsMean))));
+  print("Std devs: {}".format(", ".join(map("{:8.6f}".format, statsStd))));
+  print("");
+  print("Number of frequency channels: {}".format(spec.shape[0]));
+  print("");
+  print("Number of spectra: {}".format(spec.shape[1]));
+  print("");  
   
   # --------------------------------------------------------------------------- #
   # Plot the results
   # --------------------------------------------------------------------------- #
   
   lw = 1.5;
-  
-  for i, m in enumerate(modelSet):
-    for j, f in enumerate(freqSet):
-      for k, n in enumerate(noiseSet):
+          
+  if bPlotHistogram:
+    
+    print("Plotting histogram for parameter {}...".format(p));
+    
+    lw = 1.5;
+    plt.figure(1); 
+    plt.clf();           
+    bv1 = plt.hist(params[p,:], bins=bins, density=False, 
+                    histtype='stepfilled',facecolor='blue', linewidth=lw, alpha=0.5)[0]; 
+                    
+    maxbin = np.max(bv1);
+    
+    if trueValue is not None:
+      plt.plot(trueValue*np.ones(2), [0, 1.1*maxbin], 'k:');
+
+    if label is None:
+      label = "Paramater {}".format(p);
       
-        if exists[i][j][k]:
-        
-          if bPlotDualHistogram:
-          
-            if exists[i][0][k] and exists[i][1][k]:
-                            
-              print("Plotting dual band histogram for parameter {}...".format(p));
-              
-              plotDualBandHistogram(
-                [freqs[i][a][k] for a,b in enumerate(freqSet)], 
-                [params[i][a][k] for a,b in enumerate(freqSet)],
-                p, bins, label=label, trueValue=trueValue);    
-                     
-              plt.savefig("{}_dualhist_p{}.png".format(filenames[i][j][k][:-4], p));
-     
-          if bPlotHistogram:
-            
-            print("Plotting histogram for parameter {}...".format(p));
-            
-            lw = 1.5;
-            plt.figure(1); 
-            plt.clf();           
-            bv1 = plt.hist(params[i][j][k][p,:], bins=bins, density=False, 
-                            histtype='stepfilled',facecolor='blue', linewidth=lw, alpha=0.5)[0]; 
-                            
-            maxbin = np.max(bv1);
-            
-            if trueValue is not None:
-              plt.plot(trueValue*np.ones(2), [0, 1.1*maxbin], 'k:');
+    plt.xlabel("{}".format(label));
+    plt.ylabel("Samples");
+    plt.ylim([0, 1.1*maxbin]);           
+    plt.savefig("{}_hist_p{}.png".format(inputFile[:-4], p));
+                  
+  if bPlotSpectra:
+         
+    print("Plotting spectra...");
+           
+    plt.figure(1);
+    plt.clf();
+    plt.plot(freqs, spec[:,0:-1:10]);
+    plt.xlabel('Frequency [MHz]');
+    plt.ylabel('T [K]');
+    plt.xlim([50, 100]);
+    plt.savefig("{}_spectra.png".format(inputFile[:-4])); 
 
-            if label is None:
-              label = "Paramater {}".format(p);
-              
-            plt.xlabel("{}".format(label));
-            plt.ylabel("Samples");
-            plt.ylim([0, 1.1*maxbin]);           
-            plt.savefig("{}_hist_p{}.png".format(filenames[i][j][k][:-4], p));
-                          
-          if bPlotSpectra:
-                 
-            print("Plotting spectra...");
-                   
-            plt.figure(1);
-            plt.clf();
-            plt.plot(freqs[i][j][k], spec[i][j][k][:,0:-1:10]);
-            plt.xlabel('Frequency [MHz]');
-            plt.ylabel('T [K]');
-            plt.xlim([50, 100]);
-            #plt.ylim(0.1*np.max(spec[i][j][k][:])*np.array([-1, 1]));
-            plt.savefig("{}_spectra.png".format(filenames[i][j][k][:-4])); 
-
-          if bPlotTrials:
-          
-            print("Plotting trials for parameter {}...".format(p));
-            
-            if label is None:
-              label = "Paramater {}".format(p);
-              
-            plt.figure(1);
-            plt.clf();
-            plt.plot(params[i][j][k][p,:], 'kx');  
-            plt.xlabel('Trial #');
-            plt.ylabel("{}".format(label));
-            plt.savefig("{}_trials_p{}.png".format(filenames[i][j][k][:-4], p));            
+  if bPlotTrials:
+  
+    print("Plotting trials for parameter {}...".format(p));
+    
+    if label is None:
+      label = "Paramater {}".format(p);
+      
+    plt.figure(1);
+    plt.clf();
+    plt.plot(params[p,:], 'kx');  
+    plt.xlabel('Trial #');
+    plt.ylabel("{}".format(label));
+    plt.savefig("{}_trials_p{}.png".format(inputFile[:-4], p));            
   
 # --------------------------------------------------------------------------- #
 # Execute

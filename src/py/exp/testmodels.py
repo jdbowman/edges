@@ -1,41 +1,60 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
+from joblib import dump, load
+import multiprocessing
 import csv
+import shutil
+import tempfile
 import os
 import errno
 import sys
 sys.path.append('..');
 import models
 
+
+#x[k], data[k], dataCov[k],               foregroundComponents[j][k],
 # --------------------------------------------------------------------------- #
 # Parallel processing unit job
 # --------------------------------------------------------------------------- #
-def processJob(x, data, dataCov, foregroundComponents, signalFunction, signalTrials, filename, i):
+def processJob(i, j, k, x, data, dataCov, foregroundComponents, signalFunction, 
+  signalTrials, recoveredSignal, recoveredRMS):
 
-  foregroundFits, residualRMSs = models.searchTrials(data[:,i], 
-                                                     dataCov, 
-                                                     foregroundComponents, 
-                                                     x, 
+  foregroundFits, residualRMSs = models.searchTrials(data[k][:,i], 
+                                                     dataCov[k], 
+                                                     foregroundComponents[j][k], 
+                                                     x[k], 
                                                      signalFunction, 
                                                      signalTrials);
   index = np.argmin(residualRMSs);
-    
-  row = [];
-  row.append(index);
-  row.append(residualRMSs[index]);
-  for item in foregroundFits[:,index]:
-    row.append(item);
-  for item in signalTrials[:,index]:
-    row.append(item);
   
-  with open(filename, "a") as csvFile:
-    csvWriter = csv.writer(csvFile, lineterminator='\n');
-    csvWriter.writerow(row);
+  recoveredSignal[k,j,:,i] = signalTrials[:,index];
+  recoveredRMS[k,j,i] = residualRMSs[index];
+  #row = [];
+  #row.append(index);
+  #row.append(residualRMSs[index]);
+  #for item in foregroundFits[:,index]:
+  #  row.append(item);
+  #for item in signalTrials[:,index]:
+  #  row.append(item);
+ 
+  #q.put({'filename':filename, 'row':row});
+
+
+
+def listener(q):
+
+  while 1:
+    msg = q.get();
+    if msg == 'kill':
+      break;
+       
+    with open(msg['filename'], "a") as csvFile:
+      csvWriter = csv.writer(csvFile, lineterminator='\n');
+      csvWriter.writerow(msg['row']);
+          
     
-  return row;
-
-
+    
 # --------------------------------------------------------------------------- #
 # Main
 # --------------------------------------------------------------------------- #
@@ -48,7 +67,7 @@ def main():
 
   outputBase = '/home/loco/analysis/run3';
   dataFile = '/home/loco/analysis/figure1_plotdata.csv';
-  njobs = 12;
+  nprocs = 2;
   vc = 75;
   beta = -2.5;
   nterms = 5;
@@ -125,15 +144,15 @@ def main():
   # Fit the simulated/real data
   # --------------------------------------------------------------------------- #
   
-  fits = [models.fitLinear(x, y) for x,y in zip(set, componentsPoly)];
+  fits = [models.fitLinear(x, y) for x,y in zip(set, foregroundComponents[0])];
   estimatesPoly = [x[0] for x in fits];
   rmsPoly = [x[1] for x in fits];
-  diffPoly = [set[i] - componentsPoly[i].dot(estimatesPoly[i]) for i in range(0,len(set))];
+  diffPoly = [set[i] - foregroundComponents[0][i].dot(estimatesPoly[i]) for i in range(0,len(set))];
   
-  fits = [models.fitLinear(x, y) for x,y in zip(set, componentsPhys)];
+  fits = [models.fitLinear(x, y) for x,y in zip(set, foregroundComponents[1])];
   estimatesPhys = [x[0] for x in fits];
   rmsPhys = [x[1] for x in fits];
-  diffPhys = [set[i] - componentsPhys[i].dot(estimatesPhys[i]) for i in range(0,len(set))];
+  diffPhys = [set[i] - foregroundComponents[1][i].dot(estimatesPhys[i]) for i in range(0,len(set))];
   
   # Estimate the equivalent RMS with EDGES thermal noise
   rmsNoise = 0.025;
@@ -148,27 +167,71 @@ def main():
   rcvSig = [[np.zeros([params_sig.shape[0], set_sig[i].shape[1]]) for i in range(len(v))] for j in range(len(foregroundComponents))];
   rcvRMS = [[np.zeros([1, set_sig[i].shape[1]]) for i in range(len(v))] for j in range(len(foregroundComponents))];  
   
+
+  tempFolder = tempfile.mkdtemp();
+  tempFrequency = os.path.join(tempFolder, 'frequency');
+  tempComponents = os.path.join(tempFolder, 'components');
+  tempNoiseCov = os.path.join(tempFolder, 'noisecov');
+  tempSignalParams = os.path.join(tempFolder, 'signalparams');
+  tempData = os.path.join(tempFolder, 'data');
+  tempRecoveredSignal = os.path.join(tempFolder, 'recoveredsignal');
+  tempRecoveredRMS = os.path.join(tempFolder, 'recoveredrms');
+  
+  #dump(v, tempFrequency);
+  #dump(foregroundComponents, tempComponents);
+  #dump(noiseCov, tempNoiseCov);
+  #dump(params_sig, tempSignalParams);
+  #dump(set_sig, tempData);
+  
+  nFrequencySets = len(v);
+  nComponentSets = len(foregroundComponents);
+  nSignalParams = params_sig.shape[0];
+  nSpectra = params_mini.shape[1];
+  
+  recoveredSignal = np.memmap(tempRecoveredSignal, dtype='float64', shape=(nFrequencySets, nComponentSets, nSignalParams, nSpectra), mode="w+");
+  
+  recoveredRMS = np.memmap(tempRecoveredRMS, dtype='float64', shape=(nFrequencySets, nComponentSets, nSpectra), mode="w+");
+  
   for k in range(len(v)):
     for j in range(len(foregroundComponents)):
       
       # Filename for CSV output
-      filename = "{}_gridsearch_freq{}_model{}.txt".format(outputBase, k, j);  
-      
+      #filename = "{}_gridsearch_freq{}_model{}.txt".format(outputBase, k, j);  
+      #print("Writing: {}".format(filename));
+            
       # Delete any existing file
-      try:
-        os.remove(filename)
-      except OSError:
-        pass
+      #try:
+      #  os.remove(filename)
+      #except OSError:
+      #  print("No existing file.  Continuing.");
+      #  pass
               
       # Start the parallel jobs
-      results = Parallel(n_jobs=njobs, verbose=100)(delayed(processJob)(v[k], set_sig[k],
-               noiseCov[k], 
-               foregroundComponents[j][k], 
-               models.flattenedGaussian, 
-               params_sig, 
-               filename, 
-               i) 
-               for i in range(params_mini.shape[1]));
+      results = Parallel(n_jobs=nprocs, verbose=1000, max_nbytes=100)(delayed(processJob)(i,j,k,v,set_sig,
+               noiseCov, foregroundComponents, models.flattenedGaussian, params_sig, recoveredSignal,
+               recoveredRMS) for i in range(nSpectra));
+      
+      # Start a parallel processing session
+      #m = multiprocessing.Manager();
+      #q = m.Queue();
+      #pool = multiprocessing.Pool(processes=nprocs);
+      
+      # Start the listener that writes rows whenever a job finishes
+      #pool.apply_async(listener, (q,));
+      
+      # Populate all of the jobs for parallel processing
+      #pool.starmap(processJob, [(q, v[k], set_sig[k],
+      #       noiseCov[k], 
+      #       foregroundComponents[j][k], 
+      #       models.flattenedGaussian, 
+      #       params_sig, 
+      #       filename, 
+      #       i) for i in range(params_mini.shape[1])] );      
+
+      # Kill the queue and close the pool             
+      #q.put('kill');
+      #pool.close();
+        
   
   # --------------------------------------------------------------------------- #
   # Read back in simulated signal fit results
@@ -178,6 +241,7 @@ def main():
 
       # Filename for CSV input
       filename = "{}_gridsearch_freq{}_model{}.txt".format(outputBase, k, j);
+      print("Reading: {}".format(filename));
       
       with open(filename, "r") as csvFile:
         csvReader = csv.reader(csvFile);

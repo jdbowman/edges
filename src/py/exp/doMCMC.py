@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import kurtosis
 import argparse
 import csv
 import sys
@@ -69,7 +70,7 @@ def main():
   niters = args.niter[0];
   nwalkers = args.nwalker[0];
   ntemps = args.ntemp[0];
-  nthreads = 12;
+  nthreads = 14;
     
   # --------------------------------------------------------------------------- #
   # Read in the input foreground simulation file or data file
@@ -166,9 +167,26 @@ def main():
                             threads=nthreads);
 
   # Run the sampler
-  tic = time.time();  
-  sampler.run_mcmc(pos, niters);
-  duration = time.time() -tic;
+  nblockIters = 1000;
+  bContinue = True;
+  kurtosisHistory = [];
+  totalIters = 0;
+  
+  while bContinue:
+    tic = time.time();  
+    sampler.run_mcmc(pos, nblockIters);
+    duration = time.time() - tic;
+
+    currentSamples = sampler.chain[0,:,-nblockIters:,:].reshape((nwalkers*nblockIters, ndim));    
+    currentKurtosis = kurtosis(currentSamples, axis=0);
+
+    print("");    
+    print(currentKurtosis.shape);
+    print(currentKurtosis);
+    
+    totalIters = totalIters + nblockIters;
+    if totalIters >= niters:
+      bContinue=False;
 
   # --------------------------------------------------------------------------- #
   # Save the sample chains and configuration
@@ -178,8 +196,8 @@ def main():
   currentTime = datetime.now();
   base = "{}_mcmc_{}_{}".format(inputFile[:-4], model, "{:%Y_%m_%dT%H_%M}".format(currentTime));
   
-  # Save samples from each temperature to a separate file 
-  for t in range(ntemps):
+  # Save samples from each temperature to a separate file (or just 0 now)
+  for t in range(1):
     samples = sampler.chain[t,:,:,:].reshape((-1, ndim));
     hdr = ", ".join([str(a) for a in labels]);
     np.savetxt(base + "_temp{:02}.csv".format(t), samples, delimiter=",", header=hdr);
