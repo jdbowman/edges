@@ -179,9 +179,10 @@ def main():
          
     print("Plotting spectra...");
            
+    nskip=1;
     plt.figure(1);
     plt.clf();
-    plt.plot(freqs, spec[:,0:-1:10]);
+    plt.plot(freqs, spec[:,0:-1:nskip]);
     plt.xlabel('Frequency [MHz]');
     plt.ylabel('T [K]');
     plt.xlim([50, 100]);

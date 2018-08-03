@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.stats import kurtosis
 import argparse
 import csv
@@ -131,8 +132,8 @@ def main():
     likeFunc = models.probLinearLogExpansion_FlattenedGaussian;
     likeArgs = (freqs, spec, err, vc, beta);
     labels = ["a0", "a1", "a2", "a3", "a4", "v0", "w", "tau", "A"];
-    guess_mean = [1500, 1, 1, 1, 1,            65, 10, 1, 0];
-    guess_sigma = [500, 500, 500, 500, 500,    10, 10, 1, 1]; 
+    guess_mean = [1500, 1, 1, 1, 1,            75, 10, 1, 0];
+    guess_sigma = [500, 500, 500, 500, 500,    25, 10, 1, 3]; 
          
   elif model == 'explog':
     likeFunc = models.probExponentLogExpansion_FlattenedGaussian;
@@ -167,26 +168,58 @@ def main():
                             threads=nthreads);
 
   # Run the sampler
-  nblockIters = 1000;
+  nblockIters = 10000;
   bContinue = True;
   kurtosisHistory = [];
   totalIters = 0;
+  totalBlocks = 0;
   
+  for p, lnprob, lnlike in sampler.sample(pos, iterations=nblockIters):
+    pass;
+  sampler.reset();
+    
+  print(p.shape)
+  print(lnprob.shape)
+  print(lnlike.shape)
+  
+    
   while bContinue:
     tic = time.time();  
-    sampler.run_mcmc(pos, nblockIters);
+    for p, lnprob, lnlike in sampler.sample(p, iterations=nblockIters, lnprob0=lnprob, lnlike0=lnlike):
+      pass;
     duration = time.time() - tic;
 
-    currentSamples = sampler.chain[0,:,-nblockIters:,:].reshape((nwalkers*nblockIters, ndim));    
+    #print(sampler.chain.shape)
+    currentSamples = sampler.chain[0,:,:,:].reshape((nwalkers*nblockIters, ndim));    
     currentKurtosis = kurtosis(currentSamples, axis=0);
 
-    print("");    
-    print(currentKurtosis.shape);
-    print(currentKurtosis);
-    
+    totalBlocks = totalBlocks + 1;
     totalIters = totalIters + nblockIters;
+           
+    print(""); 
+    print("Block: {}, Iterations: {}".format(totalBlocks, totalIters));  
+    print(np.median(currentSamples, axis=0));
+    print(currentKurtosis);
+    kurtosisHistory.append(currentKurtosis);
+    
+    param = 8;
+    plt.figure(1);
+    plt.clf();
+    plt.plot(currentSamples[:,param].transpose(), 'k.', markersize=1);
+    plt.ylim([-10, 10]);
+    plt.savefig("{:s}_chains_p{:02d}_iters{:08d}.png".format(inputFile[:-4], param, totalIters));
+
+    plt.figure(2);
+    plt.clf();
+    plt.plot(np.linspace(nblockIters, totalIters, totalBlocks), kurtosisHistory);
+    plt.legend(range(0,ndim));
+    plt.savefig("{:s}_chains_kurtosis.png".format(inputFile[:-4], totalIters));
+        
     if totalIters >= niters:
-      bContinue=False;
+      bContinue=False;   
+    else:     
+      sampler.reset();        
+
 
   # --------------------------------------------------------------------------- #
   # Save the sample chains and configuration

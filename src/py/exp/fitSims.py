@@ -7,6 +7,7 @@ sys.path.append('..');
 import models
 
 
+
   
 # --------------------------------------------------------------------------- #
 # Main
@@ -79,6 +80,10 @@ def main():
   if bIncludeNoise is True:
     set = set + thermalNoise * np.random.standard_normal(size=set.shape);
  
+  # Make sure things are float32
+  freqs = freqs;
+  set = set;
+  
   # --------------------------------------------------------------------------- #
   # Generate the foreground components of the models we'll fit
   # --------------------------------------------------------------------------- #    
@@ -127,7 +132,8 @@ def main():
       np.linspace(5, 50, 10),
       np.linspace(1, 9, 5),
       np.linspace(-2, 2, 41)];
-      
+
+    # Generate the signal grid for searching (1004400 points)      
     steps_sig = [
       np.linspace(60, 90, 31), 
       np.linspace(1, 40, 40),
@@ -164,6 +170,10 @@ def main():
                         ["s{}".format(n) for n in range(params_sig.shape[0])] + 
                         ["RMS [K]"] + ["{0:8.6f}".format(n) for n in freqs]); 
                                 
+      # Calculate foreground model compontens inversion once
+      XTX = np.linalg.inv(np.dot(foregroundComponents.T, foregroundComponents));
+      XT = foregroundComponents.T;    
+                                 
       # Loop over all simulated spectra and perform the grid search on each
       tic = time.time();
       for i in range(set.shape[1]):
@@ -171,9 +181,12 @@ def main():
         #fits, rmss = models.searchSignalTrials(set[:,i], foregroundComponents, 
         #                                 freqs, signalFunction, params_sig, dataCov=noiseCov);
 
-        fits, rmss = models.searchSignalRealizations(set[:,i], foregroundComponents, 
-                                         freqs, realizations_sig, dataCov=noiseCov);
+        
+        #fits, rmss = models.searchSignalRealizations(set[:,i], foregroundComponents, 
+        #                                 freqs, realizations_sig, dataCov=noiseCov);
                                          
+        fits, rmss = models.searchSignalRealizationsFast(set[:,i], XTX, XT, realizations_sig);
+                                                                                  
         index = np.argmin(rmss);
         gs_recovParams[:,i] = fits[:,index];
         gs_recovSig[:,i] = params_sig[:,index];

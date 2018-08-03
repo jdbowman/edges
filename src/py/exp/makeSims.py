@@ -32,12 +32,12 @@ def main():
   # Sample the model parameters in a multi-dimensional grid with points at the 
   # following parameter values:
   steps = [
-    [1250, 1500, 1750], 
+    [1500, 1750, 2000], 
     [-2.6, -2.55, -2.5, -2.45, -2.4], 
     [-0.1, -0.05, 0, 0.05, 0.1],
     [-0.1, -0.05, 0, 0.05, 0.1],
     [-0.1, -0.05, 0, 0.05, 0.1],
-    [0, 0.05, 0.1],
+    [0, 0.005, 0.05],
     [0, 500, 750, 1000]];
   
   steps_mini = [
@@ -46,7 +46,7 @@ def main():
     [-0.1, 0, 0.1],
     [-0.1, 0, 0.1],
     [-0.1, 0, 0.1],
-    [0, 0.1],
+    [0, 0.005],
     [0, 1000]];
       
   # Generate all parmeter grid points
@@ -65,7 +65,7 @@ def main():
   for i in range(len(v)):
 
     # Open file for output
-    filename = "{}/foreground_simulation_freq{}.csv".format(outputDir, i);
+    filename = "{}/foreground_simulation2_freq{}.csv".format(outputDir, i);
     with open(filename, "w") as csvFile:
       csvWriter = csv.writer(csvFile);
        
@@ -77,7 +77,7 @@ def main():
         csvWriter.writerow(np.concatenate( (np.array(params[:,j]), set[i][:,j])) );
           
     # Open file for output
-    filename = "{}/foreground_mini_simulation_freq{}.csv".format(outputDir, i);
+    filename = "{}/foreground_mini_simulation2_freq{}.csv".format(outputDir, i);
     with open(filename, "w") as csvFile:
       csvWriter = csv.writer(csvFile);
        

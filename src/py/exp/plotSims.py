@@ -102,7 +102,7 @@ def main():
                       help="Plot dual histogram of parameter values by frequency range.");
   parser.add_argument('-l', '--label', nargs=1,
                       help="Label to display on plot.");
-  parser.add_argument('-p', '--param', nargs=1, type=int,
+  parser.add_argument('-p', '--param', nargs=1, type=int, default=[0],
                       help="The paramater to plot.");  
   parser.add_argument('-b', '--bins', nargs=3, type=float, default=[-1,1,100],
                       help="Bins for the histogram.  A list of there values that will be given to numpy.linspace");    
@@ -137,9 +137,6 @@ def main():
   # Read the files specified in the sets and populate an array with
   spec, params, freqs, filenames, exists = loadGroup(inputFileTemplate, modelSet, freqSet, noiseSet);
 
-
-  meds = np.median(params, axis=1);
-  print(meds)
   
   # --------------------------------------------------------------------------- #
   # Plot the results

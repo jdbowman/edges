@@ -159,6 +159,8 @@ def fitLinear(data, modelComponents):
   fit = np.linalg.lstsq(modelComponents, data, rcond=None);
   return fit[0], np.sqrt(fit[1]/data.shape[0]);
 
+def fitLinearFast(data, modelComponents):
+  return np.dot(np.linalg.inv(np.dot(modelComponents.T, modelComponents)), np.dot(modelComponents.T, data));
 
 # Do a linear fit with a covariance matrix
 # A diagonal covariance matrix would look like: C = np.diag(yerr * yerr)
@@ -198,11 +200,10 @@ def searchSignalTrials(data, foregroundComponents, x, signalFunction, signalTria
       foregroundFit[:,i], cov = fitLinearCov(data - signal, dataCov, foregroundComponents);
       rms[i] = np.std(data - signal - foregroundComponents.dot(foregroundFit[:,i]));
       
-
-        
   return foregroundFit, rms;
   
   
+
 # foregroundComponents (ndata, nforegroundparams), signalRealizations(ndata, nrealizations)
 def searchSignalRealizations(data, foregroundComponents, x, signalRealizations, dataCov=None):
   
@@ -219,8 +220,25 @@ def searchSignalRealizations(data, foregroundComponents, x, signalRealizations, 
       rms[i] = np.std(data - signalRealizations[:,i] - foregroundComponents.dot(foregroundFit[:,i]));
       
   return foregroundFit, rms;
+     
+
+# foregroundComponents (ndata, nforegroundparams), signalRealizations(ndata, nrealizations)
+def searchSignalRealizationsFast(data, XTX, XT, signalRealizations):
   
-    
+  # Subtract the signal realizations from the data
+  subData = (data - signalRealizations.T).T;
+  
+  # Fit the foreground model to each of the subtracted spectra
+  foregroundFit = np.dot(XTX, np.dot(XT, subData));  
+
+  # Make realizations of the best fit foreground models
+  realizationFit = np.dot(XT.T, foregroundFit);
+  
+  # Calculate the residual RMS
+  rms = np.sqrt(np.mean((subData - realizationFit)**2, axis=0));
+      
+  return foregroundFit, rms;
+
   
 # steps is a Python list of lists.  Each sublist contains the values to use
 # for the corresponding parameter in the model.
@@ -423,12 +441,12 @@ def readFile(inputFile):
         nparams = len(paramLabels);
         
         # Then the frequencies for the spectra
-        freqs = np.array([float(j) for j in row[nparams:]]);
+        freqs = np.array([float(j) for j in row[nparams:]], dtype=float);
         nfreqs = len(freqs);
         
         # Allocate output holders for the data
-        params = np.empty([nparams, nrows-1]);
-        spectra = np.empty([nfreqs, nrows-1]);
+        params = np.empty([nparams, nrows-1], dtype=float);
+        spectra = np.empty([nfreqs, nrows-1], dtype=float);
         
       # The rest of the file is the data
       else:
