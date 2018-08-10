@@ -56,15 +56,6 @@ def main():
   bPlotCorrected = args.corrected;
   bPlotMean = args.mean;
   bPlotWaterfall = args.waterfall;
-
-  inputFile = 'C:/Users/jdbowman/Downloads/2018_221_low2.acq ';
-  outputDir = 'C:/Users/jdbowman/Downloads';
-  bPlotRaw = True;
-  bPlotCorrected = True;
-  bPlotMean = False;
-  bPlotWaterfall = True;
-  thin = 1;
-  start = -18
   
   inputDir = os.path.dirname(inputFile);
   inputFilenameBase = os.path.splitext(os.path.basename(inputFile))[0];
