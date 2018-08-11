@@ -6,6 +6,7 @@ import os
 import sys
 sys.path.append('..');
 import analysis
+import models
    
 def main():
 
@@ -29,19 +30,28 @@ def main():
                       help='Maximum frequency to plot.');  
   parser.add_argument('-t', '--thin',   
                       nargs=1, type=int, default=[1],
-                      help='Reduce the number of plotted spectra by the specified amount.');
+                      help='Reduce the number of spectra used in calculations and plots by the specified factor.');
   parser.add_argument('-r', '--raw',   
                       action='store_true', 
                       help='Plot the raw spectra for each switch position.');
   parser.add_argument('-c', '--corrected',   
                       action='store_true', 
-                      help='Plot the 3-position switch corrected spectra.');                      
-  parser.add_argument('-m', '--mean',   
+                      help='Plot the individual 3-position switch corrected spectra overlaid on the same plot.');                      
+  parser.add_argument('-i', '--integrate',   
                       action='store_true', 
-                      help='Plot the mean of the spectra.');                      
+                      help='Plot the integration (mean) of the 3-position corrected spectra.');                      
   parser.add_argument('-w', '--waterfall', 
                       action='store_true', 
-                      help='Plot a waterfall of the spectra.');
+                      help='Plot a waterfall of spectra.  Used with--corrected and/or --raw.');
+  parser.add_argument('-f', '--fit',   
+                      action='store_true',
+                      help='Fit the integrated (mean) spectrum and plot the residuals.  Specify model details using --model and --nterms.');
+  parser.add_argument('-m', '--model',   
+                      nargs=1, default=['linpoly'],
+                      help='Model to use if --fit is set.  Specify one of: linpoly, linphys, linlog');      
+  parser.add_argument('-n', '--nterms',   
+                      nargs=1, type=int, default=[5],
+                      help='Number of terms to use in model fit.');                      
                      
   args = parser.parse_args();
   print(args);
@@ -52,11 +62,19 @@ def main():
   fmin = args.fmin[0];
   fmax = args.fmax[0];
   thin = args.thin[0];
+  model = args.model[0].lower();
+  nterms = args.nterms[0];
+  bPlotFit = args.fit;
   bPlotRaw = args.raw;
   bPlotCorrected = args.corrected;
-  bPlotMean = args.mean;
+  bPlotIntegration = args.integrate;
   bPlotWaterfall = args.waterfall;
   
+  # Hard coded parameters -- should be added to commandline args at some point
+  vc = 75;
+  beta = -2.5;
+  nkernel = 64;
+
   inputDir = os.path.dirname(inputFile);
   inputFilenameBase = os.path.splitext(os.path.basename(inputFile))[0];
   outputFullBase = outputDir + '/' + inputFilenameBase;
@@ -65,48 +83,113 @@ def main():
   spec, anc, freqs = analysis.readAcq(inputFile, start=start, stop=stop, verbose=1, seek=True);
   nspec = len(spec);
   nfreqs = len(freqs);
+  channelSize = anc[0,10];
 
   p0 = spec[0:nspec:int(3*thin)];
   p1 = spec[1:nspec:int(3*thin)];
   p2 = spec[2:nspec:int(3*thin)];
   
   cor = analysis.correct(p0, p1, p2);
-
+  
   freqssub = freqs[(freqs>=fmin) & (freqs<=fmax)];
   corsub = cor[:, (freqs>=fmin) & (freqs<=fmax)];
+
+  # Integrate
   corsubmean = np.mean(corsub, axis=0);    
+
+  # Fit with model and get residuals
+  if model  == 'linpoly':
+    components = models.linearPolynomialComponents(freqssub, vc, nterms, beta=beta);
+  elif model == 'linphys':
+    if nterms is not 5:
+      print("Using 5 terms as requried by 'linphys' model.");
+      nterms = 5;
+    components = models.linearPhysicalComponents(freqssub, vc);
+  elif model == 'linlog':
+    components = models.linearLogExpansionComponents(freqssub, vc, nterms, beta=beta);
+  else:
+    print("Specified model '{}' was not recognized.  Using 'linpoly'.".format(model) );
+    components = models.linearPolynomialComponents(freqssub, vc, nterms, beta=beta);
+        
+  fit, rms = models.fitLinear(corsubmean, components);
+  print('RMS: {}'.format(rms));
+  
+  residuals = corsubmean - np.dot(components, fit);
+  
+  # Smooth residuals with boxcar kernel
+  kernel = np.ones(nkernel) / nkernel;
+  smoothres = np.convolve(residuals, kernel, 'same');
+
+
+
 
   # Make the requested plots
   fig = 1;
   cmap = 'jet';
+      
   
+  if bPlotFit:
+    
+    plt.figure(fig);
+    fig = fig + 1;
+    plt.clf();
+    plt.plot(freqssub, residuals);
+    plt.plot(freqssub, smoothres);
+    plt.xlabel("Frequency [MHz]");
+    plt.ylabel("$T_{res}$ [K]");
+    plt.xlim([fmin, fmax]);
+    plt.legend(['{:.1f} kHz'.format(1e3*channelSize), '{:.1f} kHz (smoothed)'.format(1e3*nkernel*channelSize)]);
+  
+    ymax = np.max(residuals);
+    ymin = np.min(residuals);
+    if ymax>10000:
+      ymax = np.median(residuals[:,0])*1.5;
+    ydiff = ymax - ymin;
+    ypad = ydiff * 0.1;  
+  
+    plt.ylim([ymin-ypad, ymax+ypad]);
+    plt.savefig(outputFullBase + '_3pos_residuals_{}_nterms{}.png'.format(model, nterms));     
+    
   if bPlotCorrected:
     
     plt.figure(fig);
     fig = fig + 1;
     plt.clf();
-    if bPlotMean:
-      ymax = np.max(corsubmean);
-      ymin = np.min(corsubmean);
-      plt.plot(freqssub, corsubmean);
-      suffix = '_3pos_mean.png';
-    else:
-      plt.plot(freqssub, corsub.transpose());
-      ymax = np.max(corsub[:]);
-      ymin = np.min(corsub[:]);
-      suffix = '_3pos.png';
+    plt.plot(freqssub, corsub.transpose());
     plt.xlabel("Frequency [MHz]");
     plt.ylabel("$T_{3pos}$ [K]");
     plt.xlim([fmin, fmax]);
-  
+    
+    ymax = np.max(corsub[:]);
+    ymin = np.min(corsub[:]);  
     if ymax>10000:
       ymax = np.median(corsub[:,0])*1.5;
-
     ydiff = ymax - ymin;
     ypad = ydiff * 0.1;  
+    
     plt.ylim([ymin-ypad, ymax+ypad]);
-    plt.savefig(outputFullBase + suffix);                   
+    plt.savefig(outputFullBase + '_3pos.png');                   
 
+    if bPlotIntegration:
+      
+      plt.figure(fig);
+      fig = fig + 1;
+      plt.clf();
+      plt.plot(freqssub, corsubmean);
+      plt.xlabel("Frequency [MHz]");
+      plt.ylabel("$T_{3pos}$ [K]");
+      plt.xlim([fmin, fmax]);
+    
+      ymax = np.max(corsubmean);
+      ymin = np.min(corsubmean);
+      if ymax>10000:
+        ymax = np.median(corsub[:,0])*1.5;
+      ydiff = ymax - ymin;
+      ypad = ydiff * 0.1;  
+    
+      plt.ylim([ymin-ypad, ymax+ypad]);
+      plt.savefig(outputFullBase + '_3pos_integration.png'); 
+    
     if bPlotWaterfall:
       plt.figure(fig);
       fig = fig + 1;
@@ -120,28 +203,38 @@ def main():
       
   
   if bPlotRaw:
+    
     plt.figure(fig);
     fig = fig + 1;
     plt.clf();
-    if bPlotMean:
-      h1, = plt.plot(freqs, np.mean(10*np.log10(p0), axis=0), 'b-', label='p0 (antenna)');
-      h2, = plt.plot(freqs, np.mean(10*np.log10(p1), axis=0), 'g-', label='p1 (ambient)');
-      h3, = plt.plot(freqs, np.mean(10*np.log10(p2), axis=0), 'r-', label='p2 (hot)');
-    else:
-      plt.plot(freqs, 10*np.log10(p0.transpose()), 'b-');
-      plt.plot(freqs, 10*np.log10(p1.transpose()), 'g-');
-      plt.plot(freqs, 10*np.log10(p2.transpose()), 'r-');
+    plt.plot(freqs, 10*np.log10(p0.transpose()), 'b-');
+    plt.plot(freqs, 10*np.log10(p1.transpose()), 'g-');
+    plt.plot(freqs, 10*np.log10(p2.transpose()), 'r-');
       
-      h1, = plt.plot(freqs, 10*np.log10(p0[0].transpose()), 'b-', label='p0 (antenna)');
-      h2, = plt.plot(freqs, 10*np.log10(p1[0].transpose()), 'g-', label='p1 (ambient)');
-      h3, = plt.plot(freqs, 10*np.log10(p2[0].transpose()), 'r-', label='p2 (hot)');
+    h1, = plt.plot(freqs, 10*np.log10(p0[0].transpose()), 'b-', label='p0 (antenna)');
+    h2, = plt.plot(freqs, 10*np.log10(p1[0].transpose()), 'g-', label='p1 (ambient)');
+    h3, = plt.plot(freqs, 10*np.log10(p2[0].transpose()), 'r-', label='p2 (hot)');
       
     plt.xlabel("Frequency [MHz]");
     plt.ylabel("p [dB]");  
     plt.ylim([-90, -50]);
     plt.legend(handles=[h1, h2, h3]);
     plt.savefig(outputFullBase + '_raw.png');
-    
+
+    if bPlotIntegration:
+      plt.figure(fig);
+      fig = fig + 1;
+      plt.clf();
+      h1, = plt.plot(freqs, np.mean(10*np.log10(p0), axis=0), 'b-', label='p0 (antenna)');
+      h2, = plt.plot(freqs, np.mean(10*np.log10(p1), axis=0), 'g-', label='p1 (ambient)');
+      h3, = plt.plot(freqs, np.mean(10*np.log10(p2), axis=0), 'r-', label='p2 (hot)');
+                
+      plt.xlabel("Frequency [MHz]");
+      plt.ylabel("p [dB]");  
+      plt.ylim([-90, -50]);
+      plt.legend(handles=[h1, h2, h3]);
+      plt.savefig(outputFullBase + '_raw_integration.png');
+      
     if bPlotWaterfall:
       
       clim = [-90, -75];
@@ -153,7 +246,7 @@ def main():
       plt.colorbar(label='Arbitrary power [dB]');     
       plt.xlabel("Frequency [MHz]");
       plt.ylabel("Spectrum # (p0)");
-      plt.savefig(outputFullBase + '_raw_p0_waterfall.png');                 
+      plt.savefig(outputFullBase + '_raw_waterfall_p0.png');                 
 
       plt.figure(fig);
       fig = fig + 1;
@@ -163,7 +256,7 @@ def main():
       plt.colorbar(label='Arbitrary power [dB]');     
       plt.xlabel("Frequency [MHz]");
       plt.ylabel("Spectrum # (p1)");
-      plt.savefig(outputFullBase + '_raw_p1_waterfall.png');  
+      plt.savefig(outputFullBase + '_raw_waterfall_p1.png');  
       
       plt.figure(fig);
       fig = fig + 1;
@@ -173,7 +266,7 @@ def main():
       plt.colorbar(label='Arbitrary power [dB]');     
       plt.xlabel("Frequency [MHz]");
       plt.ylabel("Spectrum # (p2)");   
-      plt.savefig(outputFullBase + '_raw_p2_waterfall.png');  
+      plt.savefig(outputFullBase + '_raw_waterfall_p2.png');  
 
 
     
