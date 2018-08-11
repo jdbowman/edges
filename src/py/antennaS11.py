@@ -223,9 +223,9 @@ def antennaS11(argv):
     if args.external != None:
       plt.plot(f/1e6, 20 * np.log10(np.abs(gammas_external_corrected)))
     ax = plt.gca()
-    ax.set_yticks(np.arange(-20,1,1))
+    ax.set_yticks(np.arange(-50,0,5))
     plt.xlim([40, 200])
-    plt.ylim([-20, 0])
+    plt.ylim([-50, 0])
     plt.grid()
     plt.xlabel('frequency [MHz]')
     plt.ylabel('magnitude [dB]')
