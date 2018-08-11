@@ -11,7 +11,7 @@ def main():
 
   # Parse command line arguments
   parser = argparse.ArgumentParser(description='Plots contents of ACQ file.');
-  #parser.add_argument('inputFile', help='Options for plotting contents of ACQ file.');
+  parser.add_argument('inputFile', help='Options for plotting contents of ACQ file.');
   parser.add_argument('-o', '--output',   
                       nargs=1, default=['.'],
                       help='Output directory.');
@@ -45,7 +45,7 @@ def main():
                      
   args = parser.parse_args();
   print(args);
-               
+  inputFile = args.inputFile;
   outputDir = args.output[0];
   start = args.start[0];
   stop = args.stop[0];

@@ -95,7 +95,7 @@ def readAcq(inputFile, start=0, stop=9999999, seek=False, verbose=2):
   # Negative start and values give the line from the end of the file.  So we
   # have to convert them to positive values from the beginning of the file.
   fileLength, pairLength, nspec = getAcqInfo(inputFile);
-  nlinesInFile = 2 * fileLength / pairLength;
+  nlinesInFile = 2.0 * fileLength / pairLength;
   
   if verbose>0:
     print('');
