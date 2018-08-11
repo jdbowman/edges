@@ -10,7 +10,7 @@ import analysis
 import models
    
 # Data files
-inputFile1 = '/home/loco/edges/data/mro/mid/2018/2018_221_mid.acq ';
+inputFile1 = '/home/loco/edges/data/mro/mid/2018/2018_222_mid.acq';
 #inputFile2 = 'C:/Users/jdbowman/Downloads/2018_221_low2.acq '; 
 outputDir = '/home/loco'; 
 fmin = 51;
@@ -18,13 +18,14 @@ fmax = 150;
 nterms = 7;
 beta = -2.5;
 
+bShow = False;
 bRead = True;
 bPlotResiduals = True;
 bPlotMean = True;
 
 inputDir = os.path.dirname(inputFile1);
 inputBase = inputFile1[:-5];
-inputFilenameBase = os.path.splitext(os.path.basename(inputFile))[0];
+inputFilenameBase = os.path.splitext(os.path.basename(inputFile1))[0];
 outputFullBase = outputDir + '/' + inputFilenameBase;
 
 # Read the input file
@@ -56,7 +57,7 @@ print('Integrating...');
 ta1Sum = np.sum(ta1, axis=0);   
 #ta2Sum = np.sum(ta2, axis=0); 
 taMean = (ta1Sum) / (nta1);
- 
+
 print('Select frequency range...');
 indices = np.array(range(nfreqsfull))[(freqsfull>=fmin) & (freqsfull<=fmax)];
 taMean = taMean[indices];
@@ -93,8 +94,9 @@ if bPlotResiduals:
   plt.ylabel("Residuals [K]");
   plt.xlim([fmin, fmax]);
   plt.ylim([ymin-ypad, ymax+ypad]);
-  plt.show();
   plt.savefig(outputFullBase + '_3pos_residuals_nterms{}_beta{}_freqs{}-{}.png'.format(nterms, beta, fmin, fmax));
+  if bShow:
+    plt.show();
   
   
 if bPlotMean:
@@ -114,6 +116,7 @@ if bPlotMean:
   plt.ylabel("$T_{corrected}$ [K]");
   plt.xlim([fmin, fmax]);
   plt.ylim([ymin-ypad, ymax+ypad]);
-  plt.show();
   plt.savefig(outputFullBase + '_3pos_mean_freqs{}-{}.png'.format(fmin, fmax));
+  if bShow:
+    plt.show();
 
