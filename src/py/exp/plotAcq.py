@@ -146,7 +146,7 @@ def main():
     ymax = np.max(residuals);
     ymin = np.min(residuals);
     if ymax>10000:
-      ymax = np.median(residuals[:,0])*1.5;
+      ymax = np.median(residuals)*1.5;
     ydiff = ymax - ymin;
     ypad = ydiff * 0.1;  
   
