@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import argparse
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
 import sys
@@ -119,7 +121,8 @@ def main():
   # Smooth residuals with boxcar kernel
   kernel = np.ones(nkernel) / nkernel;
   smoothres = np.convolve(residuals, kernel, 'same');
-
+  smoothrms = np.std(smoothres);
+  print('RMS smoothed ({}): {}'.format(nkernel, smoothrms));
 
 
 
