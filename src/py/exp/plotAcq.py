@@ -214,10 +214,10 @@ def main():
     plt.legend(['Max hold', 'Min hold', 'Mean']);
     plt.xlim([fmin, fmax]);
     
-    ymax = np.max(corsub[:]);
-    ymin = np.min(corsub[:]);  
+    ymax = np.nanmax(corsub[:]);
+    ymin = np.nanmin(corsub[:]);  
     if ymax>10000:
-      ymax = np.median(corsub[:,0])*1.5;
+      ymax = np.nanmedian(corsub[:,0])*1.5;
     ydiff = ymax - ymin;
     ypad = ydiff * 0.1;  
     
@@ -258,7 +258,7 @@ def main():
     ymax = np.nanmax(corsubmean);
     ymin = np.nanmin(corsubmean);
     if ymax>10000:
-      ymax = np.median(corsub[:,0])*1.5;
+      ymax = np.nanmedian(corsub[:,0])*1.5;
     ydiff = ymax - ymin;
     ypad = ydiff * 0.1;  
   
@@ -285,10 +285,10 @@ def main():
       components = models.linearPolynomialComponents(freqssub, vc, nterms, beta=beta);
           
     # Do the fit
-    ind = [i for i in range(len(channelWeights)) if channelWeights[i]==1]; 
+    ind = [i for i in range(len(channelWeights)) if ((channelWeights[i]==1) & (not np.isnan(corsubmean[i])))]; 
     fit, rms = models.fitLinear(corsubmean[ind], components[ind,:]);
     residuals = channelWeights * (corsubmean - np.dot(components, fit));
-    rms = np.std(residuals);
+    rms = np.nanstd(residuals[ind]);
         
     # Smooth residuals with boxcar kernel
     kernel = np.ones(nkernel) / nkernel;
@@ -299,9 +299,9 @@ def main():
     print('RMS smoothed ({:}): {:.4f} K'.format(nkernel, smoothrms));
 
     ind = [i for i in range(len(channelWeights)) if channelWeights[i]==0];     
-    plotdata = residuals.copy();
-    plotdata[ind] = float('NaN');
-    
+    plotres = residuals.copy();
+    plotres[ind] = float('NaN');
+        
     plt.figure(fig);
     fig = fig + 1;
     plt.clf();
@@ -315,7 +315,7 @@ def main():
     ymax = np.nanmax(residuals);
     ymin = np.nanmin(residuals);
     if ymax>10000:
-      ymax = np.median(residuals)*1.5;
+      ymax = np.nanmedian(residuals)*1.5;
     ydiff = ymax - ymin;
     ypad = ydiff * 0.1;  
   
