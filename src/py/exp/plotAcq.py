@@ -214,8 +214,8 @@ def main():
     plt.legend(['Max hold', 'Min hold', 'Mean']);
     plt.xlim([fmin, fmax]);
     
-    ymax = np.nanmax(corsub[:]);
-    ymin = np.nanmin(corsub[:]);  
+    ymax = np.nanmax(corsub);
+    ymin = np.nanmin(corsub);  
     if ymax>10000:
       ymax = np.nanmedian(corsub[:,0])*1.5;
     ydiff = ymax - ymin;
