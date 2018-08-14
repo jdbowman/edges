@@ -288,6 +288,7 @@ def main():
     ind = [i for i in range(len(channelWeights)) if channelWeights[i]==1]; 
     fit, rms = models.fitLinear(corsubmean[ind], components[ind,:]);
     residuals = channelWeights * (corsubmean - np.dot(components, fit));
+    rms = np.std(residuals);
         
     # Smooth residuals with boxcar kernel
     kernel = np.ones(nkernel) / nkernel;
