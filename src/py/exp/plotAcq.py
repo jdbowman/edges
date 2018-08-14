@@ -184,7 +184,7 @@ def main():
     if bFlagRFI:
       
       # Integrate after flagging bad spectra
-      rowWeights = analysis.flagAveragePower(corsub, threshold=1e4);
+      rowWeights = analysis.flagAveragePower(corsub, maxpwr=2000, minpwr=500);
       corsubmean = np.sum((corsub.transpose()*rowWeights).transpose(), axis=0) / np.sum(rowWeights);
       
       flagComponents = models.linearPolynomialComponents(freqssub, vc=75, nterms=11, beta=0);

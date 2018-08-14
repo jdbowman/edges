@@ -221,9 +221,10 @@ def correct2(p, Tcal=400, Tload=300):
 
 
 
-def flagAveragePower(spectra, threshold=1e4):
+def flagAveragePower(spectra, maxpwr=1e4, minpwr=0):
   
-  return np.where(np.mean(spectra, axis=1) > threshold, 0, 1);
+  meanSpec = np.mean(spectra, axis=1);
+  return np.where( (meanSpec > maxpwr) | (meanSpec < minpwr), 0, 1);
       
   
 def flagChannels(spectrum, components, sigma=5, tol=0.1, maxiter=5):
