@@ -95,9 +95,10 @@ def main():
   nfreqs = len(freqs);
   channelSize = anc[0,10];
 
-  p0 = spec[0:nspec:int(3*thin)];
-  p1 = spec[1:nspec:int(3*thin)];
-  p2 = spec[2:nspec:int(3*thin)];
+  nsize = nspec - (nspec % 3);
+  p0 = spec[0:nsize:int(3*thin)];
+  p1 = spec[1:nsize:int(3*thin)];
+  p2 = spec[2:nsize:int(3*thin)];
   
 
   # Make the requested plots
@@ -165,6 +166,8 @@ def main():
       plt.ylabel("Spectrum # (p2)");   
       plt.savefig(outputFullBase + '_raw_waterfall_p2.png');  
          
+      
+      
   if bPlotCorrected or bPlotIntegration or bPlotFit:
         
     # Apply the 3-position correction
@@ -182,9 +185,9 @@ def main():
       # Integrate after flagging bad spectra
       rowWeights = analysis.flagAveragePower(corsub, threshold=1e4);
       corsubmean = np.sum((corsub.transpose()*rowWeights).transpose(), axis=0) / np.sum(rowWeights);
-
-      flagComponents = models.linearPolynomialComponents(freqssub, vc=75, nterms=9, beta=-2.5);
-      channelWeights, flagrms = analysis.flagChannels(corsubmean, flagComponents, sigma=5, tol=0.1, maxiter=5);
+      
+      flagComponents = models.linearPolynomialComponents(freqssub, vc=75, nterms=11, beta=0);
+      channelWeights, flagrms = analysis.flagChannels(corsubmean, flagComponents, sigma=3, tol=0.0001, maxiter=20);
       
       print('Number of spectra flagged: {}'.format(corsub.shape[0] - np.sum(rowWeights)));      
       print('Number of channels flagged: {}'.format(corsub.shape[1] - np.sum(channelWeights)));
@@ -207,7 +210,7 @@ def main():
     plt.plot(freqssub, np.mean(corsub.transpose(), axis=1), 'k-', linewidth=lw);   
     plt.xlabel("Frequency [MHz]");
     plt.ylabel("$T_{3pos}$ [K]");
-    plt.legend(['Max hold', 'Mean', 'Min hold']);
+    plt.legend(['Max hold', 'Min hold', 'Mean']);
     plt.xlim([fmin, fmax]);
     
     ymax = np.max(corsub[:]);
@@ -241,7 +244,7 @@ def main():
 
     ind = [i for i in range(len(channelWeights)) if channelWeights[i]==0];
 
-    plotdata = corsubmean;
+    plotdata = corsubmean.copy();
     plotdata[ind] = float('NaN');
     plt.figure(fig);
     fig = fig + 1;
@@ -284,20 +287,23 @@ def main():
     ind = [i for i in range(len(channelWeights)) if channelWeights[i]==1]; 
     fit, rms = models.fitLinear(corsubmean[ind], components[ind,:]);
     residuals = channelWeights * (corsubmean - np.dot(components, fit));
-    
+        
     # Smooth residuals with boxcar kernel
     kernel = np.ones(nkernel) / nkernel;
     smoothres = np.convolve(residuals, kernel, 'same');
-    smoothrms = np.std(smoothres);
-    
-    
+    smoothrms = np.nanstd(smoothres);
+
     print('RMS: {:.4f} K'.format(rms));
     print('RMS smoothed ({:}): {:.4f} K'.format(nkernel, smoothrms));
+
+    ind = [i for i in range(len(channelWeights)) if channelWeights[i]==0];     
+    plotdata = residuals.copy();
+    plotdata[ind] = float('NaN');
     
     plt.figure(fig);
     fig = fig + 1;
     plt.clf();
-    plt.plot(freqssub, residuals, 'b-', linewidth=lw);
+    plt.plot(freqssub, plotdata, 'b-', linewidth=lw);
     plt.plot(freqssub, smoothres, 'k-', linewidth=lw);
     plt.xlabel("Frequency [MHz]");
     plt.ylabel("$T_{res}$ [K]");
