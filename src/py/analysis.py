@@ -234,6 +234,9 @@ def flagChannels(spectrum, components, sigma=5, tol=0.1, maxiter=5):
   rms_old = -1;
   count = 0;
   
+  # Seed the weights to flag NaNs and Infs
+  weights = np.where(np.isnan(spectrum) | np.isinf(spectrum), 0, 1);
+  
   while True:
     
     ind = [i for i in range(len(weights)) if weights[i]==1];
