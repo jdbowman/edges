@@ -214,8 +214,8 @@ def main():
     plt.legend(['Max hold', 'Min hold', 'Mean']);
     plt.xlim([fmin, fmax]);
     
-    ymax = np.nanmax(corsub);
-    ymin = np.nanmin(corsub);  
+    ymax = np.nanmax(np.where(~np.isinf(corsub), corsub, np.nan));
+    ymin = np.nanmin(np.where(~np.isinf(corsub), corsub, np.nan));  
     if ymax>10000:
       ymax = np.nanmedian(corsub[:,0])*1.5;
     ydiff = ymax - ymin;
@@ -246,7 +246,7 @@ def main():
     ind = [i for i in range(len(channelWeights)) if channelWeights[i]==0];
 
     plotdata = corsubmean.copy();
-    plotdata[ind] = float('NaN');
+    plotdata[ind] = np.nan;
     plt.figure(fig);
     fig = fig + 1;
     plt.clf();
@@ -255,8 +255,8 @@ def main():
     plt.ylabel("$T_{3pos}$ [K]");
     plt.xlim([fmin, fmax]);
   
-    ymax = np.nanmax(corsubmean);
-    ymin = np.nanmin(corsubmean);
+    ymax = np.nanmax(np.where(~np.isinf(corsubmean), corsubmean, np.nan));
+    ymin = np.nanmin(np.where(~np.isinf(corsubmean), corsubmean, np.nan));
     if ymax>10000:
       ymax = np.nanmedian(corsub[:,0])*1.5;
     ydiff = ymax - ymin;
@@ -312,8 +312,8 @@ def main():
     plt.xlim([fmin, fmax]);
     plt.legend(['{:.1f} kHz'.format(1e3*channelSize), '{:.1f} kHz (smoothed)'.format(1e3*nkernel*channelSize)]);
   
-    ymax = np.nanmax(residuals);
-    ymin = np.nanmin(residuals);
+    ymax = np.nanmax(np.where(~np.isinf(residuals), residuals, np.nan));
+    ymin = np.nanmin(np.where(~np.isinf(residuals), residuals, np.nan));
     if ymax>10000:
       ymax = np.nanmedian(residuals)*1.5;
     ydiff = ymax - ymin;
