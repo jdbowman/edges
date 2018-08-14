@@ -2,6 +2,9 @@
 import numpy as np
 import time
 import os
+import sys
+sys.path.append('..');
+import models
 
 # # swpos 2 resolution   24.414 adcmax  0.31476 adcmin -0.32147 temp  0 C nblk 196608 nspec 32768
 # 2018:180:14:24:29 2    0.000 0.006104  200.000  0.3 spectrum /tJg/tJ...
@@ -215,3 +218,37 @@ def correct2(p, Tcal=400, Tload=300):
   for i in range(out.shape[0]):
     out[i] = Tcal * (p[0+3*i] - p[1+3*i]) / (p[2+3*i] - p[1+3*i]) + Tload;
   return out;
+
+
+
+def flagAveragePower(spectra, threshold=1e4):
+  
+  return np.where(np.mean(spectra, axis=1) > threshold, 0, 1);
+      
+  
+def flagChannels(spectrum, components, sigma=5, tol=0.1, maxiter=5):
+  
+  weights = np.ones(spectra.shape[1]);
+
+  # Recursively fit polynomials to the spectrum and remove flag bad channels
+  rms_old = -1;
+  count = 0;
+  
+  while True:
+    
+    ind = [i for i in range(len(weights)) if weights[i]==1];
+    fit = models.fitLinearFast(spectrum[ind], components[ind,:]);
+    res = spectrum - np.dot(components, fit);
+    rms = np.std(res[ind]);
+    
+    
+    weights = np.where(spectrum > (sigma*rms), 0, 1);
+  
+    if (np.abs(1 - rms/rms_old) < tol) & count < max:
+      break;
+  
+  return weights, rms;
+
+
+  
+  
