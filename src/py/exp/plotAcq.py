@@ -114,17 +114,18 @@ def main():
     fig = fig + 1;
     plt.clf();
     
-    plt.plot(freqs, np.max(10*np.log10(p0.transpose()), axis=1), 'k--', linewidth=lw);
+    plt.plot(freqs, np.max(10*np.log10(p0.transpose()), axis=1), color=[0.75,0.75,0.75], linewidth=lw);
     h0, = plt.plot(freqs, np.mean(10*np.log10(p0.transpose()), axis=1), 'k-', linewidth=lw, label='p0 (antenna)');
-    plt.plot(freqs, np.min(10*np.log10(p0.transpose()), axis=1), 'k:', linewidth=lw);
-    
-    plt.plot(freqs, np.max(10*np.log10(p1.transpose()), axis=1), 'b--', linewidth=lw);
-    h1, = plt.plot(freqs, np.mean(10*np.log10(p1.transpose()), axis=1), 'b-', linewidth=lw, label='p0 (antenna)');
-    plt.plot(freqs, np.min(10*np.log10(p1.transpose()), axis=1), 'b:', linewidth=lw);
+    plt.plot(freqs, np.min(10*np.log10(p0.transpose()), axis=1), color=[0.5,0.5,0.5], linewidth=lw);
    
-    plt.plot(freqs, np.max(10*np.log10(p2.transpose()), axis=1), 'r--', linewidth=lw);
-    h2, = plt.plot(freqs, np.mean(10*np.log10(p2.transpose()), axis=1), 'r-', linewidth=lw, label='p0 (antenna)');
-    plt.plot(freqs, np.min(10*np.log10(p2.transpose()), axis=1), 'r:', linewidth=lw);
+    
+    plt.plot(freqs, np.max(10*np.log10(p1.transpose()), axis=1), color=[0.75,0.75,1], linewidth=lw);
+    h1, = plt.plot(freqs, np.mean(10*np.log10(p1.transpose()), axis=1), 'b-', linewidth=lw, label='p1 (antenna)');
+    plt.plot(freqs, np.min(10*np.log10(p1.transpose()), axis=1), color=[0.5,0.5,1], linewidth=lw);
+       
+    plt.plot(freqs, np.max(10*np.log10(p2.transpose()), axis=1), color=[1,0.75,0.75], linewidth=lw);
+    h2, = plt.plot(freqs, np.mean(10*np.log10(p2.transpose()), axis=1), 'r-', linewidth=lw, label='p2 (antenna)'); 
+    plt.plot(freqs, np.min(10*np.log10(p2.transpose()), axis=1), color=[1,0.5,0.5], linewidth=lw);
     
     plt.xlabel("Frequency [MHz]");
     plt.ylabel("p [dB]");  

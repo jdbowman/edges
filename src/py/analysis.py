@@ -240,14 +240,8 @@ def flagChannels(spectrum, components, sigma=5, tol=0.1, maxiter=5):
     fit,rms = models.fitLinear(spectrum[ind], components[ind,:]);
     res = spectrum - np.dot(components, fit);
     #rms = np.std(res[ind]);
-    print("")
-    print(rms)
-    print(np.max(res))
-    print(np.min(res))
     weights = np.where(res > (sigma*rms), 0, 1);
-    rel = np.abs(1.0 - rms/rms_old);
-    print(rel)
-    
+    rel = np.abs(1.0 - rms/rms_old);   
     if (rel < tol) | (count >= maxiter):
       break;
     else:
