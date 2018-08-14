@@ -20,6 +20,7 @@ gcc -w -O3 -o conduit2 -lpthread labjack_edges.c u3.c datetime.c conduit2.c -lm 
 gcc -w -O3 -o thermctl thermctl.c -lm
 gcc -w -O3 -o thermctl_1 thermctl_1.c -lm
 gcc -w -O3 -o thermctl_1_low2 thermctl_1_low2.c -lm
+gcc -w -O3 -o thermctl_1_low3 thermctl_1_low3.c -lm
 
 # POWER_SWITCH - A simple program to talk to the networked power switch (over serial) to turn on/off the two outlets.
 gcc -w -O3 -o power_switch power_switch2.c
