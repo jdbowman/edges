@@ -291,8 +291,8 @@ def main():
     smoothrms = np.std(smoothres);
     
     
-    print('RMS: {:f.4} K'.format(rms));
-    print('RMS smoothed ({:}): {:f.4} K'.format(nkernel, smoothrms));
+    print('RMS: {:.4f} K'.format(rms));
+    print('RMS smoothed ({:}): {:.4f} K'.format(nkernel, smoothrms));
     
     plt.figure(fig);
     fig = fig + 1;

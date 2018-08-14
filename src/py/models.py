@@ -157,7 +157,7 @@ def svdBasis(set, nbasis):
 # data (nfreqs), modelComponents(nfreqs, nTerms)
 def fitLinear(data, modelComponents):
   fit = np.linalg.lstsq(modelComponents, data, rcond=None);
-  return fit[0], np.sqrt(fit[1]/data.shape[0]);
+  return fit[0], np.sqrt(fit[1]/data.shape[0])[0];
 
 def fitLinearFast(data, modelComponents):
   return np.dot(np.linalg.inv(np.dot(modelComponents.T, modelComponents)), np.dot(modelComponents.T, data));
