@@ -12,6 +12,10 @@ import models
    
 def main():
 
+  # Ignore divide by zero and related warnings caused by 3-position switch 
+  # correction applied to full bandwidth (including <50 MHz)
+  np.seterr(divide='ignore', invalid='ignore')
+  
   # Parse command line arguments
   parser = argparse.ArgumentParser(description='Plots contents of ACQ file.');
   parser.add_argument('inputFile', help='Options for plotting contents of ACQ file.');
@@ -103,10 +107,11 @@ def main():
   
   if bPlotRaw:
     
+    print('Plotting raw spectra summary...');
+    
     plt.figure(fig);
     fig = fig + 1;
     plt.clf();
-    
     
     plt.plot(freqs, np.max(10*np.log10(p0.transpose()), axis=1), 'k--', linewidth=lw);
     h0, = plt.plot(freqs, np.mean(10*np.log10(p0.transpose()), axis=1), 'k-', linewidth=lw, label='p0 (antenna)');
@@ -128,6 +133,7 @@ def main():
       
     if bPlotWaterfall:
       
+      print('Plotting raw spectra waterfalls...');
       clim = [-90, -75];
       plt.figure(fig);
       fig = fig + 1;
@@ -160,24 +166,29 @@ def main():
       plt.savefig(outputFullBase + '_raw_waterfall_p2.png');  
          
   if bPlotCorrected or bPlotIntegration or bPlotFit:
-    
+        
     # Apply the 3-position correction
+    print('Applying 3-position correction...');
     cor = analysis.correct(p0, p1, p2);
     
     # Reduce the frequency range to the specified bounds
     freqssub = freqs[(freqs>=fmin) & (freqs<=fmax)];
     corsub = cor[:, (freqs>=fmin) & (freqs<=fmax)];
+    print('Frequency range reducted to {}-{} MHz ({} channels)'.format(fmin, fmax, corsub.shape[1]));
 
     # Integrate without filtering
     if bFlagRFI:
       
       # Integrate after flagging bad spectra
       rowWeights = analysis.flagAveragePower(corsub, threshold=1e4);
-      corsubmean = np.sum(corsub*rowWeights, axis=0) / np.sum(rowWeights);
+      corsubmean = np.sum((corsub.transpose()*rowWeights).transpose(), axis=0) / np.sum(rowWeights);
 
       flagComponents = models.linearPolynomialComponents(freqssub, vc=75, nterms=9, beta=-2.5);
       channelWeights, flagrms = analysis.flagChannels(corsubmean, flagComponents, sigma=5, tol=0.1, maxiter=5);
-    
+      
+      print('Number of spectra flagged: {}'.format(corsub.shape[0] - np.sum(rowWeights)));      
+      print('Number of channels flagged: {}'.format(corsub.shape[1] - np.sum(channelWeights)));
+          
     else:
       
       corsubmean = np.mean(corsub, axis=0);  
@@ -185,6 +196,8 @@ def main():
         
      
   if bPlotCorrected:
+    
+    print('Plot 3-position corrected spectra summary...');
       
     plt.figure(fig);
     fig = fig + 1;
@@ -209,6 +222,8 @@ def main():
    
     if bPlotWaterfall:
       
+      print('Plot 3-position corrected spectra waterfall...');
+      
       plt.figure(fig);
       fig = fig + 1;
       plt.clf();
@@ -222,6 +237,8 @@ def main():
       
   if bPlotIntegration:
   
+    print('Plot 3-position corrected integrated spectrum...');
+
     ind = [i for i in range(len(channelWeights)) if channelWeights[i]==0];
 
     plotdata = corsubmean;
@@ -234,8 +251,8 @@ def main():
     plt.ylabel("$T_{3pos}$ [K]");
     plt.xlim([fmin, fmax]);
   
-    ymax = np.max(corsubmean);
-    ymin = np.min(corsubmean);
+    ymax = np.nanmax(corsubmean);
+    ymin = np.nanmin(corsubmean);
     if ymax>10000:
       ymax = np.median(corsub[:,0])*1.5;
     ydiff = ymax - ymin;
@@ -246,6 +263,8 @@ def main():
   
 
   if bPlotFit:
+
+    print('Plot residuals to model fit...');
     
     # Fit with model and get residuals
     if model  == 'linpoly':
@@ -262,11 +281,7 @@ def main():
       components = models.linearPolynomialComponents(freqssub, vc, nterms, beta=beta);
           
     # Do the fit
-    ind = [i for i in range(len(channelWeights)) if channelWeights[i]==1];
-    print(len(ind))
-    print(channelWeights.shape)
-    print(corsubmean.shape)
-    print(components.shape)    
+    ind = [i for i in range(len(channelWeights)) if channelWeights[i]==1]; 
     fit, rms = models.fitLinear(corsubmean[ind], components[ind,:]);
     residuals = channelWeights * (corsubmean - np.dot(components, fit));
     
@@ -276,8 +291,8 @@ def main():
     smoothrms = np.std(smoothres);
     
     
-    print('RMS: {}'.format(rms));
-    print('RMS smoothed ({}): {}'.format(nkernel, smoothrms));
+    print('RMS: {:f.4} K'.format(rms));
+    print('RMS smoothed ({:}): {:f.4} K'.format(nkernel, smoothrms));
     
     plt.figure(fig);
     fig = fig + 1;
@@ -289,8 +304,8 @@ def main():
     plt.xlim([fmin, fmax]);
     plt.legend(['{:.1f} kHz'.format(1e3*channelSize), '{:.1f} kHz (smoothed)'.format(1e3*nkernel*channelSize)]);
   
-    ymax = np.max(residuals);
-    ymin = np.min(residuals);
+    ymax = np.nanmax(residuals);
+    ymin = np.nanmin(residuals);
     if ymax>10000:
       ymax = np.median(residuals)*1.5;
     ydiff = ymax - ymin;

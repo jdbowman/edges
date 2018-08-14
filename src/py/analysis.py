@@ -228,7 +228,7 @@ def flagAveragePower(spectra, threshold=1e4):
   
 def flagChannels(spectrum, components, sigma=5, tol=0.1, maxiter=5):
   
-  weights = np.ones(spectra.shape[1]);
+  weights = np.ones(len(spectrum));
 
   # Recursively fit polynomials to the spectrum and remove flag bad channels
   rms_old = -1;
@@ -240,11 +240,10 @@ def flagChannels(spectrum, components, sigma=5, tol=0.1, maxiter=5):
     fit = models.fitLinearFast(spectrum[ind], components[ind,:]);
     res = spectrum - np.dot(components, fit);
     rms = np.std(res[ind]);
-    
-    
-    weights = np.where(spectrum > (sigma*rms), 0, 1);
+    print(rms)
+    weights = np.where(res > (sigma*rms), 0, 1);
   
-    if (np.abs(1 - rms/rms_old) < tol) & count < max:
+    if (np.abs(1.0 - rms/rms_old) < tol) & count < maxiter:
       break;
   
   return weights, rms;
