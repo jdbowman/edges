@@ -54,14 +54,20 @@ def main():
                       help='Fit the integrated (mean) spectrum and plot the residuals.  Specify model details using --model and --nterms.');
   parser.add_argument('-m', '--model',   
                       nargs=1, default=['linpoly'],
-                      help='Model to use if --fit is set.  Specify one of: linpoly, linphys, linlog');      
+                      help='Model to use if --fit is set.  Specify one of: linpoly, linphys, linlog.');      
   parser.add_argument('-n', '--nterms',   
                       nargs=1, type=int, default=[5],
                       help='Number of terms to use in model fit.');  
   parser.add_argument('-g', '--flag', 
                       action='store_true', 
-                      help='Flag RFI in corrected integrations and residual plots.');                      
-                     
+                      help='Flag RFI in corrected integrations and residual plots.');  
+  parser.add_argument('-p', '--power', 
+                      nargs=2, type=float, default=[100, 2500], 
+                      help='Provide bounds for allowed minimum and maximum average corrected spectrum power for use when flagging.');                         
+  parser.add_argument('-d', '--threshold', 
+                      nargs=6, type=float, default=[3, 0.001, 20, 11, 75, 0], 
+                      help='Provide sigma, tolerance, maxiter, and polynomial nterms, center freq, and beta for use when flagging channels.');                         
+                                          
   args = parser.parse_args();
   print(args);
   inputFile = args.inputFile;
@@ -73,6 +79,8 @@ def main():
   thin = args.thin[0];
   model = args.model[0].lower();
   nterms = args.nterms[0];
+  power = args.power;
+  threshold = args.threshold;
   bFlagRFI = args.flag;
   bPlotFit = args.fit;
   bPlotRaw = args.raw;
@@ -178,20 +186,19 @@ def main():
     # Reduce the frequency range to the specified bounds
     freqssub = freqs[(freqs>=fmin) & (freqs<=fmax)];
     corsub = cor[:, (freqs>=fmin) & (freqs<=fmax)];
-    print('Frequency range reducted to {}-{} MHz ({} channels)'.format(fmin, fmax, corsub.shape[1]));
+    print('Frequency range reducted to {}-{} MHz (keeping {} channels)'.format(fmin, fmax, corsub.shape[1]));
 
     # Integrate without filtering
     if bFlagRFI:
       
       # Integrate after flagging bad spectra
-      rowWeights = analysis.flagAveragePower(corsub, maxpwr=2000, minpwr=500);
+      rowWeights = analysis.flagAveragePower(corsub, maxpwr=power[1], minpwr=power[0]);
       corsubmean = np.sum((corsub.transpose()*rowWeights).transpose(), axis=0) / np.sum(rowWeights);
+      print('Number of spectra flagged: {} out of {}'.format(corsub.shape[0] - np.sum(rowWeights), corsub.shape[0]));      
       
-      flagComponents = models.linearPolynomialComponents(freqssub, vc=75, nterms=11, beta=0);
-      channelWeights, flagrms = analysis.flagChannels(corsubmean, flagComponents, sigma=3, tol=0.0001, maxiter=20);
-      
-      print('Number of spectra flagged: {}'.format(corsub.shape[0] - np.sum(rowWeights)));      
-      print('Number of channels flagged: {}'.format(corsub.shape[1] - np.sum(channelWeights)));
+      flagComponents = models.linearPolynomialComponents(freqssub, vc=threshold[4], nterms=threshold[3], beta=threshold[5]);
+      channelWeights, flagrms = analysis.flagChannels(corsubmean, flagComponents, sigma=threshold[0], tol=threshold[1], maxiter=threshold[2]);  
+      print('Number of channels flagged: {} out of {}'.format(corsub.shape[1] - np.sum(channelWeights), corsub.shape[1]));
           
     else:
       
@@ -201,7 +208,7 @@ def main():
      
   if bPlotCorrected:
     
-    print('Plot 3-position corrected spectra summary...');
+    print('Plotting 3-position corrected spectra summary...');
       
     plt.figure(fig);
     fig = fig + 1;
@@ -241,7 +248,7 @@ def main():
       
   if bPlotIntegration:
   
-    print('Plot 3-position corrected integrated spectrum...');
+    print('Plotting 3-position corrected integrated spectrum...');
 
     ind = [i for i in range(len(channelWeights)) if channelWeights[i]==0];
 
@@ -268,7 +275,7 @@ def main():
 
   if bPlotFit:
 
-    print('Plot residuals to model fit...');
+    print('Plotting residuals to model fit...');
     
     # Fit with model and get residuals
     if model  == 'linpoly':
@@ -300,12 +307,12 @@ def main():
 
     ind = [i for i in range(len(channelWeights)) if channelWeights[i]==0];     
     plotres = residuals.copy();
-    plotres[ind] = float('NaN');
+    plotres[ind] = np.nan;
         
     plt.figure(fig);
     fig = fig + 1;
     plt.clf();
-    plt.plot(freqssub, plotdata, 'b-', linewidth=lw);
+    plt.plot(freqssub, plotres, 'b-', linewidth=lw);
     plt.plot(freqssub, smoothres, 'k-', linewidth=lw);
     plt.xlabel("Frequency [MHz]");
     plt.ylabel("$T_{res}$ [K]");

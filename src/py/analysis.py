@@ -223,7 +223,7 @@ def correct2(p, Tcal=400, Tload=300):
 
 def flagAveragePower(spectra, maxpwr=1e4, minpwr=0):
   
-  meanSpec = np.mean(spectra, axis=1);
+  meanSpec = np.nanmean(spectra, axis=1); 
   return np.where( (meanSpec > maxpwr) | (meanSpec < minpwr), 0, 1);
       
   
