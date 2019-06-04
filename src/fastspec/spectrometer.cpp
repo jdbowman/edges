@@ -262,6 +262,9 @@ void Spectrometer::run()
     printf("\n");
   }
 
+  // Set LNA switch to antenna as default on exit
+  m_pSwitch->set(0);
+
 } // run()
 
 
